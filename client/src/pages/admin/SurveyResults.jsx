@@ -1,22 +1,26 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.js';
-import { Button, Card, Spinner } from '../../components/ui.jsx';
+import { Button, Card, Spinner, Toggle } from '../../components/ui.jsx';
 
 export default function SurveyResults() {
   const { id } = useParams();
-  const [big, setBig] = useState(false);
+  const navigate = useNavigate();
+  const [live, setLive] = useState(true);
 
-  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useQuery({
     queryKey: ['survey-results', id],
     queryFn: () => api.authGet(`/quizzes/${id}/survey-results`),
+    refetchInterval: live ? 5000 : false,
+    refetchIntervalInBackground: true,
   });
 
   if (isLoading) return <Spinner />;
   if (isError) return <p className="text-red-600">{error.message}</p>;
 
   const { quiz, respondents, screens } = data;
+  const secondsAgo = Math.max(0, Math.round((Date.now() - dataUpdatedAt) / 1000));
 
   return (
     <div className="space-y-4">
@@ -25,13 +29,18 @@ export default function SurveyResults() {
           ← Volver al editor
         </Link>
         <h1 className="font-display text-xl font-bold">Resultados · {quiz.title}</h1>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="min-w-[13rem] rounded-lg border border-slate-200 px-3 py-1.5">
+            <Toggle
+              label={live ? `En vivo · hace ${secondsAgo}s` : 'Actualización en vivo'}
+              checked={live}
+              onChange={setLive}
+            />
+          </div>
           <Button variant="ghost" onClick={() => refetch()}>
             {isFetching ? 'Actualizando…' : 'Actualizar'}
           </Button>
-          <Button variant="secondary" onClick={() => setBig((v) => !v)}>
-            {big ? 'Vista normal' : 'Modo presentación'}
-          </Button>
+          <Button onClick={() => navigate(`/admin/quizzes/${id}/presentar`)}>Proyectar ▶</Button>
         </div>
       </div>
 
@@ -43,7 +52,7 @@ export default function SurveyResults() {
       {screens.length === 0 || respondents === 0 ? (
         <p className="text-slate-500">Todavía nadie ha respondido este sondeo.</p>
       ) : (
-        screens.map((s, i) => <ScreenResult key={s.questionId} screen={s} n={i + 1} big={big} />)
+        screens.map((s, i) => <ScreenResult key={s.questionId} screen={s} n={i + 1} big={false} />)
       )}
     </div>
   );

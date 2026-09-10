@@ -63,12 +63,17 @@ export default function QuizEditorPage() {
         >
           {quiz.status === 'PUBLISHED' ? 'Publicado' : 'Borrador'}
         </span>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex flex-wrap gap-2">
           {quiz.status === 'PUBLISHED' ? (
             <>
               <a href={playLink} target="_blank" rel="noreferrer">
                 <Button variant="secondary">Abrir ↗</Button>
               </a>
+              {isSurvey && (
+                <a href={`/admin/quizzes/${id}/presentar`} target="_blank" rel="noreferrer">
+                  <Button>Proyectar ▶</Button>
+                </a>
+              )}
               <Button variant="ghost" onClick={() => publish.mutate('unpublish')}>
                 Despublicar
               </Button>

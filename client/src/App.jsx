@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage.jsx';
 import DashboardPage from './pages/admin/DashboardPage.jsx';
 import QuizEditorPage from './pages/admin/QuizEditorPage.jsx';
 import ResultsPage from './pages/admin/ResultsPage.jsx';
+import SurveyPresent from './pages/admin/SurveyPresent.jsx';
 import AdminsPage from './pages/admin/AdminsPage.jsx';
 import GameIntroPage from './pages/play/GameIntroPage.jsx';
 import GamePlayPage from './pages/play/GamePlayPage.jsx';
@@ -84,6 +85,14 @@ export default function App() {
             <AdminShell>
               <ResultsPage />
             </AdminShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/quizzes/:id/presentar"
+        element={
+          <RequireAuth>
+            <SurveyPresent />
           </RequireAuth>
         }
       />
