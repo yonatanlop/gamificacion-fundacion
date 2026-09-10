@@ -67,6 +67,7 @@ export const themeSchema = z
 export const settingsSchema = z
   .object({
     askNickname: z.boolean().default(true),
+    nicknameLabel: z.string().max(60).optional(),
     showCorrectAtEnd: z.boolean().default(true),
     shuffleQuestions: z.boolean().default(false),
     shuffleAnswers: z.boolean().default(false),
@@ -74,11 +75,16 @@ export const settingsSchema = z
     showTimer: z.boolean().default(true),
     defaultTimeLimit: z.number().int().min(5).max(240).default(30),
     defaultPoints: z.number().int().min(0).max(10000).default(1000),
+    // Sondeo
+    acceptingResponses: z.boolean().optional(),
+    resultsVisibility: z.enum(['admin', 'end', 'never']).optional(),
+    closingMessage: z.string().max(500).optional(),
   })
   .partial()
   .passthrough();
 
 export const quizCreateSchema = z.object({
+  type: z.enum(['QUIZ', 'SURVEY']).default('QUIZ'),
   title: z.string().min(1).max(200),
   description: z.string().max(2000).optional().or(z.literal('')),
   slug: z.string().max(80).optional(),
@@ -123,16 +129,39 @@ export const questionSchema = z
     path: ['options'],
   });
 
+// Pantalla de un Sondeo: sin respuesta correcta, sin tiempo ni puntos.
+export const surveyScreenSchema = z.object({
+  type: z.enum(['SINGLE', 'MULTIPLE']).default('SINGLE'),
+  text: z.string().min(1).max(1000),
+  image: imageRef.optional().or(z.literal('')),
+  allowOther: z.boolean().default(false),
+  options: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        text: z.string().max(500).optional().or(z.literal('')),
+        image: imageRef.optional().or(z.literal('')),
+        color: hexColor.optional().or(z.literal('')),
+      }),
+    )
+    .min(1)
+    .max(8)
+    .refine((opts) => opts.some((o) => (o.text && o.text.trim()) || (o.image && o.image.trim())), {
+      message: 'Agrega al menos una opción con texto o imagen',
+    }),
+});
+
 export const reorderSchema = z.object({
   orderedIds: z.array(z.string()).min(1),
 });
 
 export const startPlaySchema = z.object({
-  nickname: z.string().trim().min(1).max(40).optional(),
+  nickname: z.string().trim().min(1).max(60).optional(),
 });
 
 export const answerSchema = z.object({
   questionId: z.string().min(1),
-  selectedOptionIds: z.array(z.string()).max(6),
-  timeMs: z.number().int().min(0).max(1000 * 60 * 10),
+  selectedOptionIds: z.array(z.string()).max(8),
+  otherText: z.string().trim().max(500).optional().or(z.literal('')),
+  timeMs: z.number().int().min(0).max(1000 * 60 * 30).default(0),
 });

@@ -32,6 +32,18 @@ export const DEFAULT_SETTINGS = {
   defaultPoints: 1000,
 };
 
+// Ajustes propios del tipo "Sondeo / Consulta rápida".
+export const DEFAULT_SURVEY_SETTINGS = {
+  askNickname: true,
+  nicknameLabel: 'Tu nombre',
+  shuffleQuestions: false,
+  shuffleAnswers: false,
+  showProgressBar: true,
+  acceptingResponses: true, // si es false, el sondeo está "cerrado" y no admite respuestas
+  resultsVisibility: 'admin', // 'admin' | 'end' | 'never'
+  closingMessage: '¡Listo! Tu respuesta quedó registrada. Muchas gracias.',
+};
+
 export const THEME_PRESETS = {
   fundacion: DEFAULT_THEME,
   claro: {
@@ -71,6 +83,7 @@ export function mergeTheme(partial) {
   };
 }
 
-export function mergeSettings(partial) {
-  return { ...DEFAULT_SETTINGS, ...(partial || {}) };
+export function mergeSettings(partial, type = 'QUIZ') {
+  const base = type === 'SURVEY' ? DEFAULT_SURVEY_SETTINGS : DEFAULT_SETTINGS;
+  return { ...base, ...(partial || {}) };
 }

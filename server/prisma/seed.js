@@ -1,9 +1,57 @@
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import { config } from '../src/config.js';
-import { DEFAULT_THEME, DEFAULT_SETTINGS } from '../src/lib/defaults.js';
+import { DEFAULT_THEME, DEFAULT_SETTINGS, DEFAULT_SURVEY_SETTINGS } from '../src/lib/defaults.js';
 
 const prisma = new PrismaClient();
+
+// --- Sondeo de ejemplo: "Mis hábitos de aprendizaje" ---------------------
+// Actividad de reflexión: hábito que frena / estrategias / red de apoyo.
+const SURVEY = {
+  slug: 'mis-habitos-de-aprendizaje',
+  title: 'Mis hábitos de aprendizaje',
+  description: 'Una actividad corta para reflexionar sobre lo que nos frena y cómo mejorar. No hay respuestas malas.',
+  screens: [
+    {
+      text: '¿Qué hábito NO te deja alcanzar tus metas de aprendizaje? (puedes marcar varios)',
+      type: 'MULTIPLE',
+      allowOther: true,
+      options: [
+        { text: 'Dejar todo para el último momento', color: '#e11d48' },
+        { text: 'Revisar el celular mientras estudio', color: '#f97316' },
+        { text: 'Estudiar sin un plan ni horario', color: '#d97706' },
+        { text: 'No preguntar cuando no entiendo', color: '#7c3aed' },
+        { text: 'Leer sin subrayar ni resumir', color: '#0891b2' },
+        { text: 'No descansar / estudiar cansado(a)', color: '#4338ca' },
+      ],
+    },
+    {
+      text: '¿Qué podrías empezar a hacer para superar ese hábito?',
+      type: 'MULTIPLE',
+      allowOther: true,
+      options: [
+        { text: 'Armar un horario semanal de estudio', color: '#16a34a' },
+        { text: 'Estudiar en bloques cortos con pausas', color: '#0d9488' },
+        { text: 'Silenciar el celular mientras estudio', color: '#2563eb' },
+        { text: 'Repasar en voz alta o explicándole a alguien', color: '#7c3aed' },
+        { text: 'Ir a las tutorías / preguntar al docente', color: '#c026d3' },
+        { text: 'Estudiar con un compañero', color: '#ca8a04' },
+      ],
+    },
+    {
+      text: '¿Quién te puede apoyar para lograrlo?',
+      type: 'MULTIPLE',
+      allowOther: true,
+      options: [
+        { text: 'El o la docente', color: '#2563eb' },
+        { text: 'Un compañero o compañera de clase', color: '#16a34a' },
+        { text: 'Mi familia', color: '#f97316' },
+        { text: 'Un tutor o monitor', color: '#7c3aed' },
+        { text: 'Bienestar / consejería estudiantil', color: '#0891b2' },
+      ],
+    },
+  ],
+};
 
 // --- Juego de ejemplo: "¿Qué aprendimos en el curso?" ---------------------
 // 7 preguntas de verdadero/falso sobre motivación y hábitos de aprendizaje.
@@ -109,9 +157,64 @@ async function seedFirstQuiz() {
   console.log(`[seed] Quiz inicial creado: /${FIRST_QUIZ.slug} (${FIRST_QUIZ.questions.length} preguntas)`);
 }
 
+async function seedSurvey() {
+  const existing = await prisma.quiz.findUnique({ where: { slug: SURVEY.slug } });
+  if (existing) {
+    console.log('[seed] El sondeo de ejemplo ya existe.');
+    return;
+  }
+  const owner = await prisma.admin.findFirst({ where: { role: 'OWNER' } });
+  await prisma.quiz.create({
+    data: {
+      slug: SURVEY.slug,
+      type: 'SURVEY',
+      title: SURVEY.title,
+      description: SURVEY.description,
+      status: 'PUBLISHED',
+      theme: {
+        ...DEFAULT_THEME,
+        palette: {
+          ...DEFAULT_THEME.palette,
+          backgroundMode: 'color',
+          background: '#f1f5f9',
+          text: '#0f172a',
+          primary: '#2563eb',
+          card: '#ffffff',
+          cardText: '#0f172a',
+        },
+        typography: { fontFamily: 'Nunito', headingScale: 1.15 },
+      },
+      settings: { ...DEFAULT_SURVEY_SETTINGS },
+      createdById: owner?.id ?? null,
+      questions: {
+        create: SURVEY.screens.map((s, i) => ({
+          order: i,
+          type: s.type,
+          text: s.text,
+          mediaType: 'none',
+          timeLimit: 0,
+          points: 0,
+          pointsMode: 'ZERO',
+          allowOther: !!s.allowOther,
+          options: {
+            create: s.options.map((o, j) => ({
+              order: j,
+              text: o.text,
+              color: o.color ?? null,
+              isCorrect: false,
+            })),
+          },
+        })),
+      },
+    },
+  });
+  console.log(`[seed] Sondeo de ejemplo creado: /${SURVEY.slug} (${SURVEY.screens.length} pantallas)`);
+}
+
 async function main() {
   await seedAdmin();
   await seedFirstQuiz();
+  await seedSurvey();
 }
 
 main()

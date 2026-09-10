@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.js';
 import { themeToStyle } from '../../lib/theme.js';
@@ -19,6 +19,9 @@ export default function GameIntroPage() {
 
   if (isLoading) return <CenteredMsg>Cargando juego…</CenteredMsg>;
   if (isError) return <CenteredMsg>Este juego no está disponible.</CenteredMsg>;
+
+  // Los sondeos tienen su propia pantalla.
+  if (data.quiz.type === 'SURVEY') return <Navigate to={`/s/${slug}`} replace />;
 
   const quiz = data.quiz;
   const helper = themeToStyle(quiz.theme);

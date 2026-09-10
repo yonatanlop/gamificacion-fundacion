@@ -4,11 +4,12 @@ import { asyncHandler, HttpError } from '../middleware/error.js';
 import { requireAuth } from '../middleware/auth.js';
 import { slugify, uniqueSlug } from '../lib/slug.js';
 import { mergeTheme, mergeSettings } from '../lib/defaults.js';
-import { fullQuizInclude, questionCreateData } from '../services/quizPayload.js';
+import { fullQuizInclude, questionCreateData, surveyScreenData } from '../services/quizPayload.js';
 import {
   quizCreateSchema,
   quizUpdateSchema,
   questionSchema,
+  surveyScreenSchema,
   reorderSchema,
 } from '../validators/schemas.js';
 
@@ -42,11 +43,12 @@ router.post(
     const quiz = await prisma.quiz.create({
       data: {
         slug,
+        type: data.type,
         title: data.title,
         description: data.description || null,
         coverImage: data.coverImage || null,
         theme: mergeTheme(data.theme),
-        settings: mergeSettings(data.settings),
+        settings: mergeSettings(data.settings, data.type),
         createdById: req.admin.id,
       },
       include: fullQuizInclude,
@@ -75,7 +77,7 @@ router.patch(
     if (data.coverImage !== undefined) patch.coverImage = data.coverImage || null;
     if (data.status !== undefined) patch.status = data.status;
     if (data.theme !== undefined) patch.theme = mergeTheme(data.theme);
-    if (data.settings !== undefined) patch.settings = mergeSettings(data.settings);
+    if (data.settings !== undefined) patch.settings = mergeSettings(data.settings, existing.type);
     if (data.slug !== undefined && slugify(data.slug) !== existing.slug) {
       patch.slug = await uniqueSlug(data.slug, slugExists(null, existing.id));
     }
@@ -102,7 +104,12 @@ router.post(
   asyncHandler(async (req, res) => {
     const quiz = await getQuizOr404(req.params.id);
     if (quiz.questions.length === 0) {
-      throw new HttpError(400, 'No se puede publicar un quiz sin preguntas');
+      throw new HttpError(
+        400,
+        quiz.type === 'SURVEY'
+          ? 'No se puede publicar un sondeo sin pantallas'
+          : 'No se puede publicar un quiz sin preguntas',
+      );
     }
     const updated = await prisma.quiz.update({
       where: { id: quiz.id },
@@ -133,6 +140,7 @@ router.post(
     const quiz = await prisma.quiz.create({
       data: {
         slug,
+        type: src.type,
         title: `${src.title} (copia)`,
         description: src.description,
         coverImage: src.coverImage,
@@ -150,6 +158,7 @@ router.post(
             timeLimit: q.timeLimit,
             points: q.points,
             pointsMode: q.pointsMode,
+            allowOther: q.allowOther,
             options: {
               create: q.options.map((o, oi) => ({
                 order: oi,
@@ -172,9 +181,12 @@ router.post(
   '/:id/questions',
   asyncHandler(async (req, res) => {
     const quiz = await getQuizOr404(req.params.id);
-    const input = questionSchema.parse(req.body);
+    const data =
+      quiz.type === 'SURVEY'
+        ? surveyScreenData(surveyScreenSchema.parse(req.body), quiz.questions.length)
+        : questionCreateData(questionSchema.parse(req.body), quiz.questions.length);
     const question = await prisma.question.create({
-      data: { quizId: quiz.id, ...questionCreateData(input, quiz.questions.length) },
+      data: { quizId: quiz.id, ...data },
       include: { options: { orderBy: { order: 'asc' } } },
     });
     res.status(201).json({ question });
@@ -216,7 +228,7 @@ router.get(
     const players = sessions.flatMap((s) => s.players);
     const finished = players.filter((p) => p.finishedAt);
     res.json({
-      quiz: { id: quiz.id, title: quiz.title, slug: quiz.slug },
+      quiz: { id: quiz.id, title: quiz.title, slug: quiz.slug, type: quiz.type },
       stats: {
         sessions: sessions.length,
         players: players.length,
@@ -226,6 +238,53 @@ router.get(
           : 0,
       },
       sessions,
+    });
+  }),
+);
+
+// Resultados agregados de un Sondeo: conteo por opción + textos "Otra".
+router.get(
+  '/:id/survey-results',
+  asyncHandler(async (req, res) => {
+    const quiz = await getQuizOr404(req.params.id);
+    if (quiz.type !== 'SURVEY') throw new HttpError(400, 'Este juego no es un sondeo');
+
+    const answers = await prisma.playerAnswer.findMany({
+      where: { player: { session: { quizId: quiz.id } } },
+      select: { questionId: true, selectedOptionIds: true, otherText: true, playerId: true },
+    });
+
+    const respondents = new Set(answers.map((a) => a.playerId)).size;
+    const screens = [...quiz.questions]
+      .sort((a, b) => a.order - b.order)
+      .map((q) => {
+        const rows = answers.filter((a) => a.questionId === q.id);
+        const counts = new Map(q.options.map((o) => [o.id, 0]));
+        const others = [];
+        for (const a of rows) {
+          for (const oid of a.selectedOptionIds) {
+            if (counts.has(oid)) counts.set(oid, counts.get(oid) + 1);
+          }
+          if (a.otherText && a.otherText.trim()) others.push(a.otherText.trim());
+        }
+        return {
+          questionId: q.id,
+          text: q.text,
+          image: q.image,
+          type: q.type,
+          allowOther: q.allowOther,
+          answered: rows.length,
+          options: [...q.options]
+            .sort((a, b) => a.order - b.order)
+            .map((o) => ({ id: o.id, text: o.text, color: o.color, count: counts.get(o.id) || 0 })),
+          others,
+        };
+      });
+
+    res.json({
+      quiz: { id: quiz.id, title: quiz.title, slug: quiz.slug, type: quiz.type },
+      respondents,
+      screens,
     });
   }),
 );

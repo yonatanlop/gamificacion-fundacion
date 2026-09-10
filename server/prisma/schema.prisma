@@ -17,6 +17,11 @@ enum QuizStatus {
   PUBLISHED
 }
 
+enum GameType {
+  QUIZ
+  SURVEY
+}
+
 enum QuestionType {
   SINGLE
   MULTIPLE
@@ -53,6 +58,7 @@ model Admin {
 model Quiz {
   id          String        @id @default(cuid())
   slug        String        @unique
+  type        GameType      @default(QUIZ)
   title       String
   description String?
   status      QuizStatus    @default(DRAFT)
@@ -79,6 +85,7 @@ model Question {
   timeLimit  Int            @default(30)
   points     Int            @default(1000)
   pointsMode PointsMode     @default(STANDARD)
+  allowOther Boolean        @default(false)
   options    AnswerOption[]
 
   @@index([quizId])
@@ -131,6 +138,7 @@ model PlayerAnswer {
   player            Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
   questionId        String
   selectedOptionIds String[]
+  otherText         String?
   isCorrect         Boolean
   timeMs            Int
   pointsAwarded     Int

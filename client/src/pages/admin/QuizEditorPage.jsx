@@ -7,12 +7,8 @@ import ImageInput from '../../components/ImageInput.jsx';
 import ThemeEditor from '../../components/ThemeEditor.jsx';
 import GamePreview from '../../components/GamePreview.jsx';
 import QuestionForm from '../../components/QuestionForm.jsx';
-
-const TABS = [
-  ['contenido', 'Contenido'],
-  ['diseno', 'Diseño'],
-  ['ajustes', 'Ajustes'],
-];
+import SurveyEditor from '../../components/SurveyEditor.jsx';
+import ShareBox from '../../components/ShareBox.jsx';
 
 export default function QuizEditorPage() {
   const { id } = useParams();
@@ -41,7 +37,14 @@ export default function QuizEditorPage() {
   if (isLoading) return <Spinner />;
   if (isError) return <p className="text-red-600">{error.message}</p>;
 
-  const playLink = `${window.location.origin}/play/${quiz.slug}`;
+  const isSurvey = quiz.type === 'SURVEY';
+  const publicPath = isSurvey ? `/s/${quiz.slug}` : `/play/${quiz.slug}`;
+  const playLink = `${window.location.origin}${publicPath}`;
+  const TABS = [
+    ['contenido', isSurvey ? 'Pantallas' : 'Contenido'],
+    ['diseno', 'Diseño'],
+    ['ajustes', 'Ajustes'],
+  ];
 
   return (
     <div className="space-y-4">
@@ -50,6 +53,9 @@ export default function QuizEditorPage() {
           ← Volver
         </Link>
         <h1 className="font-display text-xl font-bold">{quiz.title}</h1>
+        <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">
+          {isSurvey ? 'Sondeo' : 'Quiz'}
+        </span>
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
             quiz.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
@@ -61,7 +67,7 @@ export default function QuizEditorPage() {
           {quiz.status === 'PUBLISHED' ? (
             <>
               <a href={playLink} target="_blank" rel="noreferrer">
-                <Button variant="secondary">Abrir juego ↗</Button>
+                <Button variant="secondary">Abrir ↗</Button>
               </a>
               <Button variant="ghost" onClick={() => publish.mutate('unpublish')}>
                 Despublicar
@@ -79,6 +85,8 @@ export default function QuizEditorPage() {
       </div>
       {publish.isError && <p className="text-sm text-red-600">{publish.error.message}</p>}
 
+      {quiz.status === 'PUBLISHED' && <ShareBox path={publicPath} />}
+
       <div className="flex gap-1 border-b border-slate-200">
         {TABS.map(([key, label]) => (
           <button
@@ -95,11 +103,12 @@ export default function QuizEditorPage() {
         ))}
       </div>
 
-      {tab === 'contenido' && <ContentTab quiz={quiz} />}
+      {tab === 'contenido' && (isSurvey ? <SurveyEditor quiz={quiz} /> : <ContentTab quiz={quiz} />)}
       {tab === 'diseno' && <DesignTab quiz={quiz} onSave={(theme) => patch.mutate({ theme })} saving={patch.isPending} />}
       {tab === 'ajustes' && (
         <SettingsTab
           quiz={quiz}
+          isSurvey={isSurvey}
           onSave={(body) => patch.mutate(body)}
           saving={patch.isPending}
           error={patch.isError ? patch.error.message : ''}
@@ -240,7 +249,7 @@ function DesignTab({ quiz, onSave, saving }) {
 }
 
 /* -------------------------------- Ajustes ------------------------------- */
-function SettingsTab({ quiz, onSave, saving, error }) {
+function SettingsTab({ quiz, isSurvey, onSave, saving, error }) {
   const [form, setForm] = useState({
     title: quiz.title,
     description: quiz.description || '',
@@ -281,32 +290,72 @@ function SettingsTab({ quiz, onSave, saving, error }) {
         onChange={(v) => setForm({ ...form, coverImage: v })}
       />
 
-      <div className="rounded-lg border border-slate-200 p-3">
-        <p className="mb-2 text-sm font-semibold text-slate-800">Comportamiento del juego</p>
-        <Toggle label="Pedir apodo al jugador" checked={s.askNickname !== false} onChange={(v) => setS('askNickname', v)} />
-        <Toggle
-          label="Mostrar respuestas correctas al final"
-          checked={s.showCorrectAtEnd !== false}
-          onChange={(v) => setS('showCorrectAtEnd', v)}
-        />
-        <Toggle label="Barajar preguntas" checked={!!s.shuffleQuestions} onChange={(v) => setS('shuffleQuestions', v)} />
-        <Toggle label="Barajar respuestas" checked={!!s.shuffleAnswers} onChange={(v) => setS('shuffleAnswers', v)} />
-      </div>
+      {isSurvey ? (
+        <>
+          <div className="rounded-lg border border-slate-200 p-3">
+            <p className="mb-2 text-sm font-semibold text-slate-800">Participación</p>
+            <Toggle label="Pedir el nombre del participante" checked={s.askNickname !== false} onChange={(v) => setS('askNickname', v)} />
+            <Toggle
+              label="Sondeo abierto (acepta respuestas)"
+              checked={s.acceptingResponses !== false}
+              onChange={(v) => setS('acceptingResponses', v)}
+            />
+            <Toggle label="Barajar el orden de las opciones" checked={!!s.shuffleAnswers} onChange={(v) => setS('shuffleAnswers', v)} />
+          </div>
+          <Input
+            label="Etiqueta del campo de nombre"
+            value={s.nicknameLabel || 'Tu nombre'}
+            onChange={(e) => setS('nicknameLabel', e.target.value)}
+          />
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-slate-700">¿Quién ve los resultados?</span>
+            <select
+              value={s.resultsVisibility || 'admin'}
+              onChange={(e) => setS('resultsVisibility', e.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value="admin">Solo el docente (recomendado)</option>
+              <option value="end">Los participantes al terminar</option>
+              <option value="never">Nadie</option>
+            </select>
+          </label>
+          <Textarea
+            label="Mensaje al terminar"
+            rows={2}
+            value={s.closingMessage || ''}
+            onChange={(e) => setS('closingMessage', e.target.value)}
+          />
+        </>
+      ) : (
+        <>
+          <div className="rounded-lg border border-slate-200 p-3">
+            <p className="mb-2 text-sm font-semibold text-slate-800">Comportamiento del juego</p>
+            <Toggle label="Pedir apodo al jugador" checked={s.askNickname !== false} onChange={(v) => setS('askNickname', v)} />
+            <Toggle
+              label="Mostrar respuestas correctas al final"
+              checked={s.showCorrectAtEnd !== false}
+              onChange={(v) => setS('showCorrectAtEnd', v)}
+            />
+            <Toggle label="Barajar preguntas" checked={!!s.shuffleQuestions} onChange={(v) => setS('shuffleQuestions', v)} />
+            <Toggle label="Barajar respuestas" checked={!!s.shuffleAnswers} onChange={(v) => setS('shuffleAnswers', v)} />
+          </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Input
-          label="Tiempo por defecto (s)"
-          type="number"
-          value={s.defaultTimeLimit ?? 30}
-          onChange={(e) => setS('defaultTimeLimit', Number(e.target.value))}
-        />
-        <Input
-          label="Puntos por defecto"
-          type="number"
-          value={s.defaultPoints ?? 1000}
-          onChange={(e) => setS('defaultPoints', Number(e.target.value))}
-        />
-      </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input
+              label="Tiempo por defecto (s)"
+              type="number"
+              value={s.defaultTimeLimit ?? 30}
+              onChange={(e) => setS('defaultTimeLimit', Number(e.target.value))}
+            />
+            <Input
+              label="Puntos por defecto"
+              type="number"
+              value={s.defaultPoints ?? 1000}
+              onChange={(e) => setS('defaultPoints', Number(e.target.value))}
+            />
+          </div>
+        </>
+      )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
       <Button onClick={() => onSave(form)} disabled={saving}>

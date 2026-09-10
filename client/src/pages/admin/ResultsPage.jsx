@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.js';
 import { Card, Spinner } from '../../components/ui.jsx';
+import SurveyResults from './SurveyResults.jsx';
 
 export default function ResultsPage() {
   const { id } = useParams();
@@ -12,6 +13,8 @@ export default function ResultsPage() {
 
   if (isLoading) return <Spinner />;
   if (isError) return <p className="text-red-600">{error.message}</p>;
+
+  if (data.quiz.type === 'SURVEY') return <SurveyResults />;
 
   const { quiz, stats, sessions } = data;
 

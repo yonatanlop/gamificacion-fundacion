@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { prisma } from '../db.js';
 import { asyncHandler, HttpError } from '../middleware/error.js';
 import { requireAuth } from '../middleware/auth.js';
-import { questionSchema } from '../validators/schemas.js';
-import { questionCreateData } from '../services/quizPayload.js';
+import { questionSchema, surveyScreenSchema } from '../validators/schemas.js';
+import { questionCreateData, surveyScreenData } from '../services/quizPayload.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -11,11 +11,16 @@ router.use(requireAuth);
 router.patch(
   '/:id',
   asyncHandler(async (req, res) => {
-    const existing = await prisma.question.findUnique({ where: { id: req.params.id } });
+    const existing = await prisma.question.findUnique({
+      where: { id: req.params.id },
+      include: { quiz: { select: { type: true } } },
+    });
     if (!existing) throw new HttpError(404, 'Pregunta no encontrada');
 
-    const input = questionSchema.parse(req.body);
-    const data = questionCreateData(input, existing.order);
+    const data =
+      existing.quiz.type === 'SURVEY'
+        ? surveyScreenData(surveyScreenSchema.parse(req.body), existing.order)
+        : questionCreateData(questionSchema.parse(req.body), existing.order);
 
     // Reemplaza las opciones por completo (más simple y predecible que hacer diff).
     const question = await prisma.$transaction(async (tx) => {

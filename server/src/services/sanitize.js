@@ -17,11 +17,12 @@ export function toPublicQuiz(quiz, { seed = 'static', shuffleQuestions = false, 
   return {
     id: quiz.id,
     slug: quiz.slug,
+    type: quiz.type || 'QUIZ',
     title: quiz.title,
     description: quiz.description,
     coverImage: quiz.coverImage,
     theme: quiz.theme,
-    settings: publicSettings(quiz.settings),
+    settings: publicSettings(quiz.settings, quiz.type),
     questionCount: questions.length,
     questions: questions.map((q) => {
       let options = [...(q.options || [])].sort((a, b) => a.order - b.order);
@@ -35,6 +36,7 @@ export function toPublicQuiz(quiz, { seed = 'static', shuffleQuestions = false, 
         timeLimit: q.timeLimit,
         points: q.points,
         pointsMode: q.pointsMode,
+        allowOther: !!q.allowOther,
         options: options.map((o) => ({
           id: o.id,
           text: o.text,
@@ -47,8 +49,20 @@ export function toPublicQuiz(quiz, { seed = 'static', shuffleQuestions = false, 
   };
 }
 
-function publicSettings(settings) {
+function publicSettings(settings, type) {
   const s = settings || {};
+  if (type === 'SURVEY') {
+    return {
+      askNickname: s.askNickname !== false,
+      nicknameLabel: s.nicknameLabel || 'Tu nombre',
+      shuffleQuestions: !!s.shuffleQuestions,
+      shuffleAnswers: !!s.shuffleAnswers,
+      showProgressBar: s.showProgressBar !== false,
+      acceptingResponses: s.acceptingResponses !== false,
+      resultsVisibility: s.resultsVisibility || 'admin',
+      closingMessage: s.closingMessage || '¡Listo! Tu respuesta quedó registrada. Muchas gracias.',
+    };
+  }
   return {
     askNickname: s.askNickname !== false,
     showCorrectAtEnd: s.showCorrectAtEnd !== false,

@@ -33,6 +33,9 @@ router.post(
     const quiz = await getPublishedQuiz(req.params.slug);
     const body = startPlaySchema.parse(req.body || {});
     const settings = quiz.settings || {};
+    if (quiz.type === 'SURVEY' && settings.acceptingResponses === false) {
+      throw new HttpError(403, 'Este sondeo está cerrado y ya no admite respuestas.');
+    }
     const nickname = (body.nickname || '').trim() || 'Invitado';
 
     const seed = randomUUID();
@@ -64,8 +67,9 @@ router.post(
 router.post(
   '/sessions/:sessionId/answer',
   asyncHandler(async (req, res) => {
-    const { questionId, selectedOptionIds, timeMs } = answerSchema.parse(req.body);
-    const { session, player } = await loadSession(req.params.sessionId);
+    const { questionId, selectedOptionIds, otherText, timeMs } = answerSchema.parse(req.body);
+    const { session, player, quiz } = await loadSession(req.params.sessionId);
+    const isSurvey = quiz.type === 'SURVEY';
 
     const question = await prisma.question.findFirst({
       where: { id: questionId, quizId: session.quizId },
@@ -76,21 +80,34 @@ router.post(
     const validIds = new Set(question.options.map((o) => o.id));
     const selected = [...new Set(selectedOptionIds)].filter((id) => validIds.has(id));
     const correctOptionIds = question.options.filter((o) => o.isCorrect).map((o) => o.id);
+    const cleanOther = question.allowOther && otherText ? String(otherText).trim().slice(0, 500) : '';
 
-    const { isCorrect, pointsAwarded } = scoreAnswer({
-      type: question.type,
-      correctOptionIds,
-      selectedOptionIds: selected,
-      timeMs,
-      timeLimit: question.timeLimit,
-      points: question.points,
-      pointsMode: question.pointsMode,
-    });
+    const { isCorrect, pointsAwarded } = isSurvey
+      ? { isCorrect: false, pointsAwarded: 0 }
+      : scoreAnswer({
+          type: question.type,
+          correctOptionIds,
+          selectedOptionIds: selected,
+          timeMs,
+          timeLimit: question.timeLimit,
+          points: question.points,
+          pointsMode: question.pointsMode,
+        });
 
     const existing = await prisma.playerAnswer.findUnique({
       where: { playerId_questionId: { playerId: player.id, questionId } },
     });
-    if (existing) throw new HttpError(409, 'Esta pregunta ya fue respondida');
+    if (existing) {
+      // En el sondeo, permitir corregir la respuesta antes de terminar.
+      if (isSurvey) {
+        await prisma.playerAnswer.update({
+          where: { playerId_questionId: { playerId: player.id, questionId } },
+          data: { selectedOptionIds: selected, otherText: cleanOther || null },
+        });
+        return res.json({ ok: true, updated: true });
+      }
+      throw new HttpError(409, 'Esta pregunta ya fue respondida');
+    }
 
     await prisma.$transaction([
       prisma.playerAnswer.create({
@@ -98,6 +115,7 @@ router.post(
           playerId: player.id,
           questionId,
           selectedOptionIds: selected,
+          otherText: cleanOther || null,
           isCorrect,
           timeMs,
           pointsAwarded,
@@ -109,7 +127,8 @@ router.post(
       }),
     ]);
 
-    res.json({
+    if (isSurvey) return res.json({ ok: true });
+    return res.json({
       isCorrect,
       pointsAwarded,
       totalScore: player.totalScore + pointsAwarded,
@@ -137,10 +156,43 @@ router.post(
       });
     }
 
+    const questions = [...quiz.questions].sort((a, b) => a.order - b.order);
+
+    if (quiz.type === 'SURVEY') {
+      const settings = quiz.settings || {};
+      const vis = settings.resultsVisibility || 'admin';
+      const payload = {
+        type: 'SURVEY',
+        closingMessage: settings.closingMessage || '¡Listo! Tu respuesta quedó registrada. Muchas gracias.',
+        showResults: vis === 'end',
+      };
+      if (vis === 'end') {
+        const all = await prisma.playerAnswer.findMany({
+          where: { player: { session: { quizId: quiz.id } } },
+          select: { questionId: true, selectedOptionIds: true, otherText: true, playerId: true },
+        });
+        payload.respondents = new Set(all.map((a) => a.playerId)).size;
+        payload.screens = questions.map((q) => {
+          const rows = all.filter((a) => a.questionId === q.id);
+          const counts = new Map(q.options.map((o) => [o.id, 0]));
+          for (const a of rows) {
+            for (const oid of a.selectedOptionIds) if (counts.has(oid)) counts.set(oid, counts.get(oid) + 1);
+          }
+          return {
+            questionId: q.id,
+            text: q.text,
+            options: [...q.options]
+              .sort((a, b) => a.order - b.order)
+              .map((o) => ({ id: o.id, text: o.text, color: o.color, count: counts.get(o.id) || 0 })),
+          };
+        });
+      }
+      return res.json(payload);
+    }
+
     const answers = await prisma.playerAnswer.findMany({ where: { playerId: player.id } });
     const byQuestion = new Map(answers.map((a) => [a.questionId, a]));
     const showCorrect = (quiz.settings || {}).showCorrectAtEnd !== false;
-    const questions = [...quiz.questions].sort((a, b) => a.order - b.order);
 
     const review = questions.map((q) => {
       const a = byQuestion.get(q.id);

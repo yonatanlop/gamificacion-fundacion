@@ -9,6 +9,7 @@ import AdminsPage from './pages/admin/AdminsPage.jsx';
 import GameIntroPage from './pages/play/GameIntroPage.jsx';
 import GamePlayPage from './pages/play/GamePlayPage.jsx';
 import GameResultPage from './pages/play/GameResultPage.jsx';
+import SurveyRunner from './pages/play/SurveyRunner.jsx';
 
 function RequireAuth({ children }) {
   const { admin, loading } = useAuth();
@@ -100,6 +101,9 @@ export default function App() {
       <Route path="/play/:slug" element={<GameIntroPage />} />
       <Route path="/play/:slug/jugar" element={<GamePlayPage />} />
       <Route path="/play/:slug/resultado" element={<GameResultPage />} />
+
+      {/* Sondeo / Consulta rápida */}
+      <Route path="/s/:slug" element={<SurveyRunner />} />
 
       <Route path="*" element={<div className="p-10 text-center text-slate-500">Página no encontrada</div>} />
     </Routes>
