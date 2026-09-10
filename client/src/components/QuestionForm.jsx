@@ -178,13 +178,27 @@ export default function QuestionForm({ initial, onSave, onCancel, saving }) {
                 onChange={(e) => setOption(i, { text: e.target.value })}
                 className="min-w-[8rem] flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm disabled:bg-slate-100"
               />
-              <input
-                type="color"
-                title="Color propio de la opción"
-                value={/^#[0-9a-fA-F]{6}$/.test(o.color) ? o.color : '#cccccc'}
-                onChange={(e) => setOption(i, { color: e.target.value })}
-                className="h-8 w-9 cursor-pointer rounded border border-slate-300"
-              />
+              <span className="flex shrink-0 items-center gap-1">
+                <input
+                  type="color"
+                  title="Color propio de la opción (si no lo defines, se usa el color del tema)"
+                  value={/^#[0-9a-fA-F]{6}$/.test(o.color) ? o.color : '#dddddd'}
+                  onChange={(e) => setOption(i, { color: e.target.value })}
+                  className="h-8 w-9 cursor-pointer rounded border border-slate-300"
+                />
+                {/^#[0-9a-fA-F]{6}$/.test(o.color) ? (
+                  <button
+                    type="button"
+                    title="Volver al color del tema"
+                    onClick={() => setOption(i, { color: '' })}
+                    className="text-xs text-slate-400 hover:text-slate-700"
+                  >
+                    ✕
+                  </button>
+                ) : (
+                  <span className="text-[10px] leading-tight text-slate-400">tema</span>
+                )}
+              </span>
               {q.type !== 'TRUE_FALSE' && (
                 <div className="w-full sm:w-64">
                   <ImageInput label="" compact value={o.image} onChange={(v) => setOption(i, { image: v })} />

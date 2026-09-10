@@ -2,8 +2,8 @@ import { Shape } from '../lib/shapes.jsx';
 
 /**
  * Rejilla de respuestas tematizada, reutilizada en el juego y en la vista previa.
- * options: [{ id, text, image }]
- * state: 'idle' | 'answered' | 'review'
+ * options: [{ id, text, image, color }]
+ * Si la opción trae `color` propio, ese manda; si no, se usa la paleta del tema.
  */
 export default function AnswerGrid({
   options,
@@ -37,7 +37,7 @@ export default function AnswerGrid({
             type="button"
             disabled={disabled}
             onClick={() => onPick(opt.id)}
-            style={{ backgroundColor: helper.optionColor(i) }}
+            style={{ backgroundColor: opt.color || helper.optionColor(i) }}
             className={`flex min-h-[64px] items-center gap-3 rounded-xl px-4 py-3 text-left text-lg font-bold text-white shadow-lg transition ${ring} ${
               disabled ? 'cursor-default' : 'hover:brightness-110'
             }`}
