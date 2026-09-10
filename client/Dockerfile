@@ -1,5 +1,8 @@
 # syntax=docker/dockerfile:1
-FROM node:20-alpine AS build
+# El bundle de Vite son archivos estáticos (no depende de la arquitectura),
+# así que se compila SIEMPRE en la arquitectura del runner ($BUILDPLATFORM).
+# Solo la imagen final de nginx se construye para la arquitectura destino.
+FROM --platform=$BUILDPLATFORM node:20-alpine AS build
 WORKDIR /app
 ARG VITE_API_BASE=""
 ENV VITE_API_BASE=$VITE_API_BASE
