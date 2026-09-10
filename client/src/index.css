@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #0f172a;
+}
+
+/* Contenedor tematizado del juego: las variables se inyectan desde lib/theme.js */
+.game-theme {
+  --bg: #1e1b4b;
+  --text: #ffffff;
+  --primary: #22c55e;
+  --card: #ffffff;
+  --card-text: #111827;
+  color: var(--text);
+  font-family: var(--font-family, 'Poppins'), 'Nunito', system-ui, sans-serif;
+}

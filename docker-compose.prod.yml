@@ -1,0 +1,36 @@
+# Overlay opcional para producción con HTTPS automático (Caddy).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Requisitos:
+#   - Un dominio apuntando (registro A) a la IP pública de la VM de Oracle Cloud.
+#   - Puertos 80 y 443 abiertos en la "security list" de OCI y en el firewall del SO.
+#   - Definir en .env:  CADDY_DOMAIN=gamificacion.midominio.org   y   CADDY_EMAIL=tucorreo@dominio
+#
+# Con este overlay, "web" (nginx) deja de exponer el puerto directamente y queda
+# detrás de Caddy, que termina TLS y redirige a nginx.
+
+services:
+  web:
+    ports: []
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CADDY_DOMAIN: ${CADDY_DOMAIN}
+      CADDY_EMAIL: ${CADDY_EMAIL}
+    command: >
+      sh -c 'printf "%s {\n  tls %s\n  reverse_proxy web:80\n}\n" "$$CADDY_DOMAIN" "$$CADDY_EMAIL" > /etc/caddy/Caddyfile && exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
