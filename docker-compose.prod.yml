@@ -1,18 +1,19 @@
-# Overlay opcional para producción con HTTPS automático (Caddy).
+# Overlay para producción con HTTPS automático (Caddy + Let's Encrypt).
 #
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#   docker compose -f docker-compose.deploy.yml -f docker-compose.prod.yml up -d
 #
 # Requisitos:
-#   - Un dominio apuntando (registro A) a la IP pública de la VM de Oracle Cloud.
-#   - Puertos 80 y 443 abiertos en la "security list" de OCI y en el firewall del SO.
-#   - Definir en .env:  CADDY_DOMAIN=gamificacion.midominio.org   y   CADDY_EMAIL=tucorreo@dominio
+#   - Un nombre de dominio que apunte a la IP pública de la VM. Sirve uno gratis
+#     tipo sslip.io:  149-118-61-207.sslip.io  (no requiere registro).
+#   - Puerto 443 abierto en la "Security List" de OCI (igual que el 80).
+#   - En .env:  CADDY_DOMAIN=149-118-61-207.sslip.io   (CADDY_EMAIL es opcional)
 #
-# Con este overlay, "web" (nginx) deja de exponer el puerto directamente y queda
-# detrás de Caddy, que termina TLS y redirige a nginx.
+# Con este overlay, "web" (nginx) deja de publicar el puerto directamente:
+# Caddy publica 80 y 443, termina TLS y redirige a nginx por la red interna.
 
 services:
   web:
-    ports: []
+    ports: !reset []
 
   caddy:
     image: caddy:2-alpine
@@ -22,11 +23,13 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"
     environment:
       CADDY_DOMAIN: ${CADDY_DOMAIN}
-      CADDY_EMAIL: ${CADDY_EMAIL}
     command: >
-      sh -c 'printf "%s {\n  tls %s\n  reverse_proxy web:80\n}\n" "$$CADDY_DOMAIN" "$$CADDY_EMAIL" > /etc/caddy/Caddyfile && exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
+      sh -c 'printf "%s {\n\treverse_proxy web:80\n}\n" "$$CADDY_DOMAIN" > /etc/caddy/Caddyfile
+      && echo "--- Caddyfile ---" && cat /etc/caddy/Caddyfile
+      && exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
     volumes:
       - caddy_data:/data
       - caddy_config:/config

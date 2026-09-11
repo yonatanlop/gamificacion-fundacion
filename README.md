@@ -140,12 +140,23 @@ solo lectura de paquetes.)
    docker compose -f docker-compose.deploy.yml up -d
    ```
 
-   Con dominio + HTTPS automático:
+   Con HTTPS automático (Caddy + Let's Encrypt):
 
-   ```bash
-   # en .env:  CADDY_DOMAIN=gamificacion.tudominio.org   CADDY_EMAIL=tu@correo
-   docker compose -f docker-compose.deploy.yml -f docker-compose.prod.yml up -d
-   ```
+   1. Abre el **puerto 443** en la Security List de OCI (igual que el 80).
+   2. Consigue un dominio que apunte a la IP. Gratis y sin registro con
+      **sslip.io**: si la IP es `149.118.61.207`, el dominio es
+      `149-118-61-207.sslip.io` (ya resuelve solo).
+   3. En `.env`:
+      ```
+      CADDY_DOMAIN=149-118-61-207.sslip.io
+      PUBLIC_BASE_URL=https://149-118-61-207.sslip.io
+      ```
+   4. Levanta con el overlay:
+      ```bash
+      docker compose -f docker-compose.deploy.yml -f docker-compose.prod.yml up -d
+      ```
+   Caddy obtiene el certificado en el primer arranque (challenge por el puerto 80)
+   y a partir de ahí sirve HTTPS en el 443, renovando solo.
 
 6. **Actualizar** a la última versión publicada:
 
