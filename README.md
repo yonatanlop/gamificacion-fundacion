@@ -1,4 +1,4 @@
-# Gamificación Fundación
+# Gamificaciones
 
 Plataforma de juegos de preguntas y respuestas para crear actividades
 gamificadas. Un administrador inicia sesión, gestiona los juegos (preguntas,
@@ -17,7 +17,7 @@ público para jugar.
 | Servicio | Tecnología | Rol |
 |----------|-----------|-----|
 | `db`     | PostgreSQL 16 | Base de datos |
-| `server` | Node 20 + Express + Prisma | API REST (`/api/*`) y archivos subidos (`/uploads/*`) |
+| `server` | Node 20 + Express + Prisma | API REST (`/api/*`), archivos subidos (`/uploads/*`) y librería de íconos (`/icons/*`) |
 | `web`    | React + Vite + Tailwind servido por nginx | UI + reverse proxy hacia `server` |
 
 ```
@@ -200,6 +200,27 @@ docker run --rm -v "$(basename "$PWD" | tr 'A-Z' 'a-z')_uploads":/data -v "$PWD"
 | POST | `/api/play/:slug/start` | — | Iniciar partida |
 | POST | `/api/play/sessions/:id/answer` | — | Responder una pregunta |
 | POST | `/api/play/sessions/:id/finish` | — | Finalizar y ver resumen |
+| GET | `/api/icons/manifest` | — | Índice de íconos para el buscador del picker |
+| GET | `/icons/:set/:name.svg` | — | Ícono SVG personalizado (`?color=&stroke=&size=`) |
+
+## Librería de íconos
+
+Al editar la imagen de una pregunta, opción, portada o el logo del tema, el
+botón **"Elegir ícono"** abre un buscador con miles de íconos SVG gratuitos:
+
+- **[Tabler Icons](https://tabler.io/icons)** (MIT, ~5.100) y
+  **[Lucide](https://lucide.dev)** (ISC, ~1.500) — ambos permiten uso,
+  modificación y redistribución sin atribución obligatoria (a diferencia de la
+  mayoría de assets de Flaticon, que exigen atribución o licencia paga).
+- Se importan una sola vez con `scripts/import-icons.mjs` y quedan
+  **committeados** en `server/assets/icons/` — no hay llamadas a servicios
+  externos en producción.
+- Cada ícono es editable al elegirlo: color, grosor de línea y tamaño (se
+  aplican como parámetros de la URL, p. ej.
+  `/icons/tabler/home.svg?color=%232563eb&stroke=1.5&size=48`), así que se
+  guarda y funciona igual que cualquier otra imagen subida.
+- Para sumar más íconos más adelante: agregar el paquete npm en `scripts/`,
+  ajustar `import-icons.mjs` y volver a ejecutarlo.
 
 ## Juego de ejemplo
 

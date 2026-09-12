@@ -3,7 +3,7 @@ import { Select, Toggle, ColorField } from './ui.jsx';
 import ImageInput from './ImageInput.jsx';
 
 const PRESETS = {
-  Fundación: DEFAULT_THEME,
+  Clásico: DEFAULT_THEME,
   Claro: {
     ...DEFAULT_THEME,
     palette: {

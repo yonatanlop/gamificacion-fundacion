@@ -27,7 +27,7 @@ function AdminShell({ children }) {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-3">
           <Link to="/admin" className="font-display text-lg font-extrabold text-indigo-700">
-            Gamificación Fundación
+            Gamificaciones
           </Link>
           <nav className="flex gap-3 text-sm">
             <Link to="/admin" className="text-slate-600 hover:text-indigo-700">

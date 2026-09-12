@@ -45,7 +45,7 @@ export const DEFAULT_SURVEY_SETTINGS = {
 };
 
 export const THEME_PRESETS = {
-  fundacion: DEFAULT_THEME,
+  clasico: DEFAULT_THEME,
   claro: {
     ...DEFAULT_THEME,
     palette: {

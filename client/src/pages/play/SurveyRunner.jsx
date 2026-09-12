@@ -178,6 +178,9 @@ export default function SurveyRunner() {
                     >
                       {on ? '✓' : ''}
                     </span>
+                    {opt.image && (
+                      <img src={opt.image} alt="" className="h-8 w-8 shrink-0 object-contain" />
+                    )}
                     <span className="min-w-0 break-words">{opt.text}</span>
                   </button>
                 );

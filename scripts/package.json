@@ -1,0 +1,9 @@
+{
+  "name": "icon-import-scripts",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@tabler/icons": "^3.31.0",
+    "lucide-static": "^0.468.0"
+  }
+}

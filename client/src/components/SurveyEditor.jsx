@@ -7,7 +7,7 @@ import ImageInput from './ImageInput.jsx';
 const PALETTE = ['#e11d48', '#f97316', '#d97706', '#16a34a', '#0d9488', '#2563eb', '#7c3aed', '#c026d3'];
 
 function emptyOption(i = 0) {
-  return { text: '', color: PALETTE[i % PALETTE.length] };
+  return { text: '', color: PALETTE[i % PALETTE.length], image: '' };
 }
 
 function normalize(screen) {
@@ -19,7 +19,11 @@ function normalize(screen) {
     image: screen.image || '',
     type: screen.type === 'MULTIPLE' ? 'MULTIPLE' : 'SINGLE',
     allowOther: !!screen.allowOther,
-    options: screen.options.map((o, i) => ({ text: o.text || '', color: o.color || PALETTE[i % PALETTE.length] })),
+    options: screen.options.map((o, i) => ({
+      text: o.text || '',
+      color: o.color || PALETTE[i % PALETTE.length],
+      image: o.image || '',
+    })),
   };
 }
 
@@ -39,7 +43,7 @@ function ScreenForm({ initial, onSave, onCancel, saving }) {
       text: s.text.trim(),
       image: s.image.trim(),
       allowOther: s.allowOther,
-      options: opts.map((o) => ({ text: o.text.trim(), color: o.color || '' })),
+      options: opts.map((o) => ({ text: o.text.trim(), color: o.color || '', image: o.image || '' })),
     });
   }
 
@@ -70,13 +74,13 @@ function ScreenForm({ initial, onSave, onCancel, saving }) {
         </div>
         <div className="space-y-2">
           {s.options.map((o, i) => (
-            <div key={i} className="flex items-center gap-2 rounded-lg border border-slate-200 p-2">
+            <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 p-2">
               <input
                 type="text"
                 placeholder={`Opción ${i + 1}`}
                 value={o.text}
                 onChange={(e) => setOpt(i, { text: e.target.value })}
-                className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
+                className="min-w-[8rem] flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
               />
               <input
                 type="color"
@@ -85,6 +89,9 @@ function ScreenForm({ initial, onSave, onCancel, saving }) {
                 onChange={(e) => setOpt(i, { color: e.target.value })}
                 className="h-8 w-9 cursor-pointer rounded border border-slate-300"
               />
+              <div className="w-full sm:w-64">
+                <ImageInput label="" compact value={o.image} onChange={(v) => setOpt(i, { image: v })} />
+              </div>
               {s.options.length > 1 && (
                 <Button variant="ghost" onClick={() => setS({ ...s, options: s.options.filter((_, idx) => idx !== i) })}>
                   ✕

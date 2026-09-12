@@ -31,7 +31,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-600 to-purple-700 p-4">
       <Card className="w-full max-w-sm">
-        <h1 className="font-display text-2xl font-extrabold text-indigo-700">Gamificación Fundación</h1>
+        <h1 className="font-display text-2xl font-extrabold text-indigo-700">Gamificaciones</h1>
         <p className="mb-4 text-sm text-slate-500">Panel de administración</p>
         <form onSubmit={submit} className="space-y-3">
           <Input

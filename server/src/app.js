@@ -9,6 +9,7 @@ import quizRoutes from './routes/quizzes.routes.js';
 import questionRoutes from './routes/questions.routes.js';
 import uploadRoutes from './routes/uploads.routes.js';
 import playRoutes from './routes/play.routes.js';
+import { iconsApiRouter, iconsStaticRouter } from './routes/icons.routes.js';
 
 export function createApp() {
   const app = express();
@@ -29,6 +30,8 @@ export function createApp() {
     }),
   );
 
+  app.use('/icons', iconsStaticRouter);
+
   app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
   app.use('/api/auth', authRoutes);
@@ -37,6 +40,7 @@ export function createApp() {
   app.use('/api/questions', questionRoutes);
   app.use('/api/uploads', uploadRoutes);
   app.use('/api/play', playRoutes);
+  app.use('/api/icons', iconsApiRouter);
 
   app.use('/api', notFound);
   app.use(errorHandler);

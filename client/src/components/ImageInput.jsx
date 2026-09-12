@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { api } from '../api/client.js';
 import { Button } from './ui.jsx';
+import IconPicker from './IconPicker.jsx';
 
 /**
- * Campo de imagen: permite subir un archivo (al volumen del servidor) o pegar una URL.
- * value = string (URL o /uploads/...). onChange(nuevoValor).
+ * Campo de imagen: permite subir un archivo, pegar una URL o elegir un ícono
+ * de la librería (Tabler + Lucide). value = string (URL, /uploads/... o
+ * /icons/...). onChange(nuevoValor).
  */
 export default function ImageInput({ label = 'Imagen', value, onChange, compact = false }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [showPicker, setShowPicker] = useState(false);
 
   async function handleFile(e) {
     const file = e.target.files?.[0];
@@ -43,6 +46,9 @@ export default function ImageInput({ label = 'Imagen', value, onChange, compact 
           </span>
           <input type="file" accept="image/*" className="hidden" onChange={handleFile} disabled={busy} />
         </label>
+        <Button variant="secondary" onClick={() => setShowPicker(true)}>
+          Elegir ícono
+        </Button>
         {value && (
           <Button variant="ghost" onClick={() => onChange('')}>
             Quitar
@@ -50,6 +56,15 @@ export default function ImageInput({ label = 'Imagen', value, onChange, compact 
         )}
       </div>
       {error && <p className="text-xs text-red-600">{error}</p>}
+      {showPicker && (
+        <IconPicker
+          onClose={() => setShowPicker(false)}
+          onPick={(url) => {
+            onChange(url);
+            setShowPicker(false);
+          }}
+        />
+      )}
       {value && !compact && (
         <img
           src={value}
