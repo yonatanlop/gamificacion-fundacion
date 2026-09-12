@@ -7,6 +7,7 @@ import QuizEditorPage from './pages/admin/QuizEditorPage.jsx';
 import ResultsPage from './pages/admin/ResultsPage.jsx';
 import SurveyPresent from './pages/admin/SurveyPresent.jsx';
 import AdminsPage from './pages/admin/AdminsPage.jsx';
+import IconLibraryPage from './pages/admin/IconLibraryPage.jsx';
 import GameIntroPage from './pages/play/GameIntroPage.jsx';
 import GamePlayPage from './pages/play/GamePlayPage.jsx';
 import GameResultPage from './pages/play/GameResultPage.jsx';
@@ -32,6 +33,9 @@ function AdminShell({ children }) {
           <nav className="flex gap-3 text-sm">
             <Link to="/admin" className="text-slate-600 hover:text-indigo-700">
               Juegos
+            </Link>
+            <Link to="/admin/iconos" className="text-slate-600 hover:text-indigo-700">
+              Íconos
             </Link>
             {isOwner && (
               <Link to="/admin/usuarios" className="text-slate-600 hover:text-indigo-700">
@@ -93,6 +97,16 @@ export default function App() {
         element={
           <RequireAuth>
             <SurveyPresent />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/iconos"
+        element={
+          <RequireAuth>
+            <AdminShell>
+              <IconLibraryPage />
+            </AdminShell>
           </RequireAuth>
         }
       />

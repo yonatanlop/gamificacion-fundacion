@@ -10,3 +10,4 @@ coverage/
 server/prisma/dev.db
 uploads-data/
 .vite/
+.claude/

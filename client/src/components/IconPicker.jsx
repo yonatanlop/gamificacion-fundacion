@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client.js';
 import { Button } from './ui.jsx';
+import { expandSearchTerms } from '../lib/iconSynonyms.js';
 
 const PAGE = 120;
 
@@ -35,12 +36,11 @@ export default function IconPicker({ onPick, onClose }) {
 
   const filtered = useMemo(() => {
     if (!data) return [];
-    const needle = q.trim().toLowerCase();
-    return data.icons.filter((i) => {
-      if (i.set !== tab) return false;
-      if (!needle) return true;
-      return i.name.includes(needle) || i.tags.some((t) => t.includes(needle));
-    });
+    if (!q.trim()) return data.icons.filter((i) => i.set === tab);
+    const terms = expandSearchTerms(q);
+    return data.icons.filter(
+      (i) => i.set === tab && terms.some((term) => i.name.includes(term) || i.tags.some((t) => t.includes(term))),
+    );
   }, [data, tab, q]);
 
   const visible = filtered.slice(0, limit);
@@ -66,7 +66,7 @@ export default function IconPicker({ onPick, onClose }) {
               setQ(e.target.value);
               setLimit(PAGE);
             }}
-            placeholder="Buscar (en inglés): house, arrow, book…"
+            placeholder="Buscar: bombillo, casa, house, arrow…"
             className="min-w-[12rem] flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
           <div className="flex gap-1">
