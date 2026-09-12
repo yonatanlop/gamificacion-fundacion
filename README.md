@@ -206,21 +206,41 @@ docker run --rm -v "$(basename "$PWD" | tr 'A-Z' 'a-z')_uploads":/data -v "$PWD"
 ## Librería de íconos
 
 Al editar la imagen de una pregunta, opción, portada o el logo del tema, el
-botón **"Elegir ícono"** abre un buscador con miles de íconos SVG gratuitos:
+botón **"Elegir ícono"** abre un buscador con miles de íconos SVG gratuitos.
+También hay una sección aparte en el menú (**Íconos**, `/admin/iconos`) para
+buscar, personalizar y descargar sin tener que entrar a una pregunta.
 
-- **[Tabler Icons](https://tabler.io/icons)** (MIT, ~5.100) y
-  **[Lucide](https://lucide.dev)** (ISC, ~1.500) — ambos permiten uso,
-  modificación y redistribución sin atribución obligatoria (a diferencia de la
-  mayoría de assets de Flaticon, que exigen atribución o licencia paga).
-- Se importan una sola vez con `scripts/import-icons.mjs` y quedan
-  **committeados** en `server/assets/icons/` — no hay llamadas a servicios
-  externos en producción.
+Dos familias por estilo, todas con licencia permisiva (uso, modificación y
+redistribución sin atribución obligatoria — a diferencia de la mayoría de
+assets de Flaticon, que exigen atribución o licencia paga):
+
+| Set | Licencia | Cantidad | Estilo |
+|---|---|---|---|
+| [Tabler Icons](https://tabler.io/icons) | MIT | ~5.100 | Línea, un solo color — **recoloreable** |
+| [Lucide](https://lucide.dev) | ISC | ~1.500 | Línea, un solo color — **recoloreable** |
+| [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (estilo Flat) | MIT | ~3.200 | Emoji a todo color — color fijo |
+| [Noto Emoji](https://github.com/googlefonts/noto-emoji) | Apache-2.0 | ~1.700 | Emoji a todo color — color fijo |
+
+- Los sets de línea (Tabler/Lucide) se pueden recolorear y ajustar el grosor;
+  los de emoji a color (Fluent/Noto) no — cada uno ya trae varios tonos fijos
+  y el control de color no aplicaría. El picker oculta esos controles
+  automáticamente para el set que no los soporta (`recolorable: false` en el
+  manifest). En ambos casos el tamaño sí es ajustable.
+- Se importan una sola vez con `scripts/import-icons.mjs` (usa los paquetes
+  npm `@tabler/icons`, `lucide-static`, `@iconify-json/fluent-emoji-flat` y
+  `@iconify-json/noto`) y quedan **committeados** en `server/assets/icons/`
+  (~20 MB, ~11.500 íconos) — no hay llamadas a servicios externos en
+  producción. Se descartan las variantes de tono de piel de los emoji (ruido
+  y duplican el concepto base).
 - Cada ícono es editable al elegirlo: color, grosor de línea y tamaño (se
   aplican como parámetros de la URL, p. ej.
   `/icons/tabler/home.svg?color=%232563eb&stroke=1.5&size=48`), así que se
   guarda y funciona igual que cualquier otra imagen subida.
-- Para sumar más íconos más adelante: agregar el paquete npm en `scripts/`,
-  ajustar `import-icons.mjs` y volver a ejecutarlo.
+- **Búsqueda en español**: `client/src/lib/iconSynonyms.js` traduce términos
+  comunes (casa, bombillo, fiesta, hábito…) a las palabras clave en inglés que
+  usan los sets, ya que sus nombres y etiquetas originales están en inglés.
+- Para sumar más íconos o sets más adelante: agregar el paquete npm en
+  `scripts/`, ajustar `import-icons.mjs` y volver a ejecutarlo.
 
 ## Juego de ejemplo
 

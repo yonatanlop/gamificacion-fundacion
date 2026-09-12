@@ -33,7 +33,10 @@ export default function IconLibraryPage() {
   }, [data, tab, q]);
 
   const visible = filtered.slice(0, limit);
-  const opts = { color, stroke, size };
+  const activeSource = data?.sources.find((s) => s.set === tab);
+  const recolorable = activeSource?.recolorable !== false;
+  const opts = recolorable ? { color, stroke, size } : { size };
+  const selectedSource = selected && data?.sources.find((s) => s.set === selected.set);
 
   function downloadIcon(icon) {
     const a = document.createElement('a');
@@ -62,8 +65,8 @@ export default function IconLibraryPage() {
       <div>
         <h1 className="font-display text-xl font-bold">Biblioteca de íconos</h1>
         <p className="text-sm text-slate-500">
-          Busca, personaliza (color, grosor y tamaño) y descarga íconos SVG gratuitos — Tabler Icons y Lucide,
-          libres de usar y modificar. Puedes buscar en español o en inglés.
+          Busca, personaliza y descarga íconos SVG gratuitos — de línea (Tabler, Lucide, recoloreables) o a color fijo
+          (Fluent Emoji, Noto). Libres de usar y modificar. Puedes buscar en español o en inglés.
         </p>
       </div>
 
@@ -100,19 +103,25 @@ export default function IconLibraryPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-4">
-          <label className="flex items-center gap-2 text-sm text-slate-600">
-            Color
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="h-8 w-9 cursor-pointer rounded border border-slate-300"
-            />
-          </label>
-          <label className="flex items-center gap-2 text-sm text-slate-600">
-            Grosor
-            <input type="range" min="0.5" max="3.5" step="0.25" value={stroke} onChange={(e) => setStroke(e.target.value)} />
-          </label>
+          {recolorable ? (
+            <>
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                Color
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="h-8 w-9 cursor-pointer rounded border border-slate-300"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                Grosor
+                <input type="range" min="0.5" max="3.5" step="0.25" value={stroke} onChange={(e) => setStroke(e.target.value)} />
+              </label>
+            </>
+          ) : (
+            <span className="text-sm text-slate-500">Íconos a color fijo — no se pueden recolorear.</span>
+          )}
           <label className="flex items-center gap-2 text-sm text-slate-600">
             Tamaño
             <input type="range" min="24" max="256" step="8" value={size} onChange={(e) => setSize(e.target.value)} />
@@ -158,7 +167,7 @@ export default function IconLibraryPage() {
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold text-slate-800">{selected.name}</p>
               <p className="text-xs text-slate-500">
-                {selected.set === 'tabler' ? 'Tabler Icons (MIT)' : 'Lucide (ISC)'}
+                {selectedSource ? `${selectedSource.label} (${selectedSource.license})` : selected.set}
               </p>
             </div>
             <Button variant="secondary" onClick={() => copyUrl(selected)}>

@@ -44,6 +44,9 @@ export default function IconPicker({ onPick, onClose }) {
   }, [data, tab, q]);
 
   const visible = filtered.slice(0, limit);
+  const activeSource = data?.sources.find((s) => s.set === tab);
+  const recolorable = activeSource?.recolorable !== false;
+  const opts = recolorable ? { color, stroke, size } : { size };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
@@ -86,27 +89,33 @@ export default function IconPicker({ onPick, onClose }) {
               </button>
             ))}
           </div>
-          <label className="flex items-center gap-1 text-xs text-slate-500">
-            Color
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="h-8 w-9 cursor-pointer rounded border border-slate-300"
-            />
-          </label>
-          <label className="flex items-center gap-1 text-xs text-slate-500">
-            Grosor
-            <input
-              type="range"
-              min="0.5"
-              max="3.5"
-              step="0.25"
-              value={stroke}
-              onChange={(e) => setStroke(e.target.value)}
-              className="w-20"
-            />
-          </label>
+          {recolorable ? (
+            <>
+              <label className="flex items-center gap-1 text-xs text-slate-500">
+                Color
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="h-8 w-9 cursor-pointer rounded border border-slate-300"
+                />
+              </label>
+              <label className="flex items-center gap-1 text-xs text-slate-500">
+                Grosor
+                <input
+                  type="range"
+                  min="0.5"
+                  max="3.5"
+                  step="0.25"
+                  value={stroke}
+                  onChange={(e) => setStroke(e.target.value)}
+                  className="w-20"
+                />
+              </label>
+            </>
+          ) : (
+            <span className="text-xs text-slate-400">Íconos a color fijo — no se pueden recolorear.</span>
+          )}
           <label className="flex items-center gap-1 text-xs text-slate-500">
             Tamaño
             <input
@@ -133,11 +142,11 @@ export default function IconPicker({ onPick, onClose }) {
                   key={icon.id}
                   type="button"
                   title={icon.name}
-                  onClick={() => onPick(buildIconUrl(icon, { color, stroke, size }))}
+                  onClick={() => onPick(buildIconUrl(icon, opts))}
                   className="flex aspect-square items-center justify-center rounded-lg border border-slate-200 p-2 hover:border-indigo-400 hover:bg-indigo-50"
                 >
                   <img
-                    src={buildIconUrl(icon, { color, stroke, size: 32 })}
+                    src={buildIconUrl(icon, { ...opts, size: 32 })}
                     alt={icon.name}
                     className="h-6 w-6"
                     loading="lazy"

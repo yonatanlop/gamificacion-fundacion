@@ -4,6 +4,8 @@
   "type": "module",
   "devDependencies": {
     "@tabler/icons": "^3.31.0",
-    "lucide-static": "^0.468.0"
+    "lucide-static": "^0.468.0",
+    "@iconify-json/fluent-emoji-flat": "^1.2.6",
+    "@iconify-json/noto": "^1.2.7"
   }
 }

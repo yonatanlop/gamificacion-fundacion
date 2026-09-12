@@ -1,8 +1,9 @@
-// Los íconos (Tabler + Lucide) tienen nombre y etiquetas en inglés. Este
-// diccionario traduce términos comunes en español a palabras clave en inglés
-// para que la búsqueda "bombillo" también encuentre "bulb"/"light", etc.
-// No pretende ser exhaustivo: cubre conceptos frecuentes en un contexto
-// educativo/institucional. Se puede seguir ampliando con el tiempo.
+// Los íconos (Tabler, Lucide, Fluent Emoji, Noto) tienen nombre y etiquetas
+// en inglés. Este diccionario traduce términos comunes en español a palabras
+// clave en inglés para que la búsqueda "bombillo" también encuentre
+// "bulb"/"light", "fiesta" encuentre "party", etc. No pretende ser
+// exhaustivo: cubre conceptos frecuentes en un contexto educativo/institucional
+// y del vocabulario típico de emojis. Se puede seguir ampliando con el tiempo.
 export const ICON_SYNONYMS = {
   // Casa y lugares
   casa: ['house', 'home'],
@@ -167,7 +168,6 @@ export const ICON_SYNONYMS = {
   regalo: ['gift'],
 
   // Símbolos / formas
-  candado_abierto: ['lock-open'],
   bandera: ['flag'],
   mapa: ['map'],
   ubicacion: ['map-pin', 'location'],
@@ -186,8 +186,7 @@ export const ICON_SYNONYMS = {
   advertencia: ['alert-triangle', 'warning'],
   candela: ['candle'],
   escudo: ['shield'],
-  llave_inglesa: ['tool', 'wrench'],
-  herramienta: ['tool'],
+  herramienta: ['tool', 'wrench'],
   engranaje: ['settings', 'gear'],
 
   // Sondeo / actividad (vocabulario propio de la app)
@@ -195,6 +194,61 @@ export const ICON_SYNONYMS = {
   estrategia: ['bulb', 'target', 'chess'],
   apoyo: ['heart-handshake', 'users', 'life-buoy'],
   compromiso: ['handshake', 'check'],
+
+  // Celebraciones / emociones (frecuente en los sets de emoji a color)
+  fiesta: ['party', 'confetti', 'celebration'],
+  celebracion: ['party', 'confetti', 'celebration'],
+  cumpleanos: ['birthday', 'cake', 'party'],
+  torta: ['cake'],
+  pastel: ['cake'],
+  globo: ['balloon'],
+  risa: ['laughing', 'grinning', 'joy'],
+  reir: ['laughing', 'grinning', 'joy'],
+  llorar: ['crying', 'sad'],
+  beso: ['kiss', 'kissing'],
+  abrazo: ['hug', 'hugging'],
+  aplauso: ['clapping'],
+  saludo: ['wave', 'waving'],
+  pulgar: ['thumbs-up', 'thumbsup'],
+  pirotecnia: ['fireworks'],
+  musica: ['music', 'musical-note'],
+  baile: ['dancing', 'dancer'],
+  deporte: ['sport', 'ball', 'trophy'],
+  futbol: ['soccer', 'football'],
+  baloncesto: ['basketball'],
+  natacion: ['swim', 'swimming'],
+
+  // Viajes / clima
+  viaje: ['travel', 'suitcase', 'airplane'],
+  maleta: ['suitcase', 'luggage'],
+  vacaciones: ['beach', 'palm-tree', 'travel'],
+  arcoiris: ['rainbow'],
+  tormenta: ['storm', 'lightning', 'cloud'],
+  rayo: ['bolt', 'lightning'],
+  viento: ['wind'],
+  paraguas: ['umbrella'],
+
+  // Comida (frecuente en emoji)
+  helado: ['ice-cream', 'ice-cream-cone'],
+  hamburguesa: ['hamburger', 'burger'],
+  ensalada: ['salad', 'green-salad'],
+  fruta: ['fruit'],
+  verdura: ['vegetable'],
+  chocolate: ['chocolate'],
+  dulce: ['candy', 'sweet'],
+  bebida: ['drink', 'beverage'],
+  jugo: ['juice'],
+  cerveza: ['beer'],
+  vino: ['wine'],
+
+  // Cuerpo / gestos
+  mano: ['hand'],
+  ojo: ['eye'],
+  cara: ['face'],
+  cerebro: ['brain'],
+  diente: ['tooth'],
+  hueso: ['bone'],
+  musculo: ['muscle', 'flexed-biceps'],
 };
 
 /** Expande una búsqueda escrita en español con sus equivalentes en inglés. */
