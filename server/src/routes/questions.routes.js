@@ -13,9 +13,11 @@ router.patch(
   asyncHandler(async (req, res) => {
     const existing = await prisma.question.findUnique({
       where: { id: req.params.id },
-      include: { quiz: { select: { type: true } } },
+      include: { quiz: { select: { type: true, createdById: true } } },
     });
-    if (!existing) throw new HttpError(404, 'Pregunta no encontrada');
+    if (!existing || existing.quiz.createdById !== req.admin.id) {
+      throw new HttpError(404, 'Pregunta no encontrada');
+    }
 
     const data =
       existing.quiz.type === 'SURVEY'
@@ -38,8 +40,11 @@ router.patch(
 router.delete(
   '/:id',
   asyncHandler(async (req, res) => {
-    const q = await prisma.question.findUnique({ where: { id: req.params.id } });
-    if (!q) throw new HttpError(404, 'Pregunta no encontrada');
+    const q = await prisma.question.findUnique({
+      where: { id: req.params.id },
+      include: { quiz: { select: { createdById: true } } },
+    });
+    if (!q || q.quiz.createdById !== req.admin.id) throw new HttpError(404, 'Pregunta no encontrada');
     await prisma.$transaction(async (tx) => {
       await tx.question.delete({ where: { id: q.id } });
       const rest = await tx.question.findMany({

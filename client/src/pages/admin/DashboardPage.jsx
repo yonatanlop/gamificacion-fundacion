@@ -13,6 +13,8 @@ export default function DashboardPage() {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('QUIZ');
   const [copied, setCopied] = useState('');
+  const [sharing, setSharing] = useState(null);
+  const [shareEmail, setShareEmail] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['quizzes'],
@@ -35,6 +37,14 @@ export default function DashboardPage() {
   const remove = useMutation({
     mutationFn: (id) => api.authDel(`/quizzes/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['quizzes'] }),
+  });
+
+  const share = useMutation({
+    mutationFn: () => api.authPost(`/quizzes/${sharing.id}/share`, { email: shareEmail.trim() }),
+    onSuccess: () => {
+      setSharing(null);
+      setShareEmail('');
+    },
   });
 
   async function copy(quiz) {
@@ -119,6 +129,15 @@ export default function DashboardPage() {
               <Button variant="ghost" onClick={() => duplicate.mutate(quiz.id)}>
                 Duplicar
               </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setSharing(quiz);
+                  setShareEmail('');
+                }}
+              >
+                Compartir
+              </Button>
               <ConfirmButton onConfirm={() => remove.mutate(quiz.id)} confirmLabel="¿Eliminar?">
                 Eliminar
               </ConfirmButton>
@@ -129,6 +148,36 @@ export default function DashboardPage() {
           <p className="text-slate-500">Aún no hay juegos. Crea el primero arriba.</p>
         )}
       </div>
+
+      {sharing && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setSharing(null)}
+        >
+          <Card className="w-full max-w-sm space-y-3" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-display text-lg font-bold">Compartir "{sharing.title}"</h3>
+            <p className="text-sm text-slate-500">
+              El destinatario recibirá una notificación y, si la acepta, obtendrá su propia copia de este juego.
+            </p>
+            <Input
+              label="Correo del destinatario"
+              type="email"
+              value={shareEmail}
+              onChange={(e) => setShareEmail(e.target.value)}
+              placeholder="persona@correo.com"
+            />
+            {share.isError && <p className="text-sm text-red-600">{share.error.message}</p>}
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setSharing(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={() => share.mutate()} disabled={!shareEmail.trim() || share.isPending}>
+                {share.isPending ? 'Enviando…' : 'Enviar'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

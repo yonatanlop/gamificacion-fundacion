@@ -4,13 +4,14 @@ import { asyncHandler, HttpError } from '../middleware/error.js';
 import { requireAuth } from '../middleware/auth.js';
 import { slugify, uniqueSlug } from '../lib/slug.js';
 import { mergeTheme, mergeSettings } from '../lib/defaults.js';
-import { fullQuizInclude, questionCreateData, surveyScreenData } from '../services/quizPayload.js';
+import { fullQuizInclude, questionCreateData, surveyScreenData, buildQuizCopyData } from '../services/quizPayload.js';
 import {
   quizCreateSchema,
   quizUpdateSchema,
   questionSchema,
   surveyScreenSchema,
   reorderSchema,
+  shareCreateSchema,
 } from '../validators/schemas.js';
 
 const router = Router();
@@ -25,6 +26,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const quizzes = await prisma.quiz.findMany({
+      where: { createdById: req.admin.id },
       orderBy: { updatedAt: 'desc' },
       include: {
         createdBy: { select: { id: true, name: true } },
@@ -60,7 +62,7 @@ router.post(
 router.get(
   '/:id',
   asyncHandler(async (req, res) => {
-    const quiz = await getQuizOr404(req.params.id);
+    const quiz = await getQuizOr404(req.params.id, req.admin.id);
     res.json({ quiz });
   }),
 );
@@ -69,7 +71,7 @@ router.patch(
   '/:id',
   asyncHandler(async (req, res) => {
     const data = quizUpdateSchema.parse(req.body);
-    const existing = await getQuizOr404(req.params.id);
+    const existing = await getQuizOr404(req.params.id, req.admin.id);
 
     const patch = {};
     if (data.title !== undefined) patch.title = data.title;
@@ -94,6 +96,7 @@ router.patch(
 router.delete(
   '/:id',
   asyncHandler(async (req, res) => {
+    await getQuizOr404(req.params.id, req.admin.id);
     await prisma.quiz.delete({ where: { id: req.params.id } });
     res.status(204).end();
   }),
@@ -102,7 +105,7 @@ router.delete(
 router.post(
   '/:id/publish',
   asyncHandler(async (req, res) => {
-    const quiz = await getQuizOr404(req.params.id);
+    const quiz = await getQuizOr404(req.params.id, req.admin.id);
     if (quiz.questions.length === 0) {
       throw new HttpError(
         400,
@@ -123,6 +126,7 @@ router.post(
 router.post(
   '/:id/unpublish',
   asyncHandler(async (req, res) => {
+    await getQuizOr404(req.params.id, req.admin.id);
     const updated = await prisma.quiz.update({
       where: { id: req.params.id },
       data: { status: 'DRAFT' },
@@ -135,42 +139,10 @@ router.post(
 router.post(
   '/:id/duplicate',
   asyncHandler(async (req, res) => {
-    const src = await getQuizOr404(req.params.id);
+    const src = await getQuizOr404(req.params.id, req.admin.id);
     const slug = await uniqueSlug(`${src.slug}-copia`, slugExists(null));
     const quiz = await prisma.quiz.create({
-      data: {
-        slug,
-        type: src.type,
-        title: `${src.title} (copia)`,
-        description: src.description,
-        coverImage: src.coverImage,
-        theme: src.theme,
-        settings: src.settings,
-        status: 'DRAFT',
-        createdById: req.admin.id,
-        questions: {
-          create: src.questions.map((q, qi) => ({
-            order: qi,
-            type: q.type,
-            text: q.text,
-            image: q.image,
-            mediaType: q.mediaType,
-            timeLimit: q.timeLimit,
-            points: q.points,
-            pointsMode: q.pointsMode,
-            allowOther: q.allowOther,
-            options: {
-              create: q.options.map((o, oi) => ({
-                order: oi,
-                text: o.text,
-                image: o.image,
-                color: o.color,
-                isCorrect: o.isCorrect,
-              })),
-            },
-          })),
-        },
-      },
+      data: buildQuizCopyData(src, { slug, createdById: req.admin.id, title: `${src.title} (copia)` }),
       include: fullQuizInclude,
     });
     res.status(201).json({ quiz });
@@ -178,9 +150,29 @@ router.post(
 );
 
 router.post(
+  '/:id/share',
+  asyncHandler(async (req, res) => {
+    const quiz = await getQuizOr404(req.params.id, req.admin.id);
+    const { email } = shareCreateSchema.parse(req.body);
+    if (email === req.admin.email.toLowerCase()) {
+      throw new HttpError(400, 'No puedes compartir contigo mismo');
+    }
+    const recipient = await prisma.admin.findUnique({ where: { email } });
+    if (!recipient) throw new HttpError(404, 'No existe un usuario con ese correo');
+
+    const share = await prisma.quizShare.upsert({
+      where: { quizId_toAdminId: { quizId: quiz.id, toAdminId: recipient.id } },
+      update: { createdAt: new Date() },
+      create: { quizId: quiz.id, fromAdminId: req.admin.id, toAdminId: recipient.id },
+    });
+    res.status(201).json({ share });
+  }),
+);
+
+router.post(
   '/:id/questions',
   asyncHandler(async (req, res) => {
-    const quiz = await getQuizOr404(req.params.id);
+    const quiz = await getQuizOr404(req.params.id, req.admin.id);
     const data =
       quiz.type === 'SURVEY'
         ? surveyScreenData(surveyScreenSchema.parse(req.body), quiz.questions.length)
@@ -196,7 +188,7 @@ router.post(
 router.post(
   '/:id/reorder-questions',
   asyncHandler(async (req, res) => {
-    const quiz = await getQuizOr404(req.params.id);
+    const quiz = await getQuizOr404(req.params.id, req.admin.id);
     const { orderedIds } = reorderSchema.parse(req.body);
     const owned = new Set(quiz.questions.map((q) => q.id));
     if (orderedIds.length !== owned.size || !orderedIds.every((id) => owned.has(id))) {
@@ -205,7 +197,7 @@ router.post(
     await prisma.$transaction(
       orderedIds.map((id, order) => prisma.question.update({ where: { id }, data: { order } })),
     );
-    const updated = await getQuizOr404(quiz.id);
+    const updated = await getQuizOr404(quiz.id, req.admin.id);
     res.json({ quiz: updated });
   }),
 );
@@ -213,7 +205,7 @@ router.post(
 router.get(
   '/:id/results',
   asyncHandler(async (req, res) => {
-    const quiz = await getQuizOr404(req.params.id);
+    const quiz = await getQuizOr404(req.params.id, req.admin.id);
     const sessions = await prisma.gameSession.findMany({
       where: { quizId: quiz.id },
       orderBy: { startedAt: 'desc' },
@@ -246,7 +238,7 @@ router.get(
 router.get(
   '/:id/survey-results',
   asyncHandler(async (req, res) => {
-    const quiz = await getQuizOr404(req.params.id);
+    const quiz = await getQuizOr404(req.params.id, req.admin.id);
     if (quiz.type !== 'SURVEY') throw new HttpError(400, 'Este juego no es un sondeo');
 
     const answers = await prisma.playerAnswer.findMany({
@@ -289,10 +281,12 @@ router.get(
   }),
 );
 
-async function getQuizOr404(id) {
+export async function getQuizOr404(id, adminId) {
   const quiz = await prisma.quiz.findUnique({ where: { id }, include: fullQuizInclude });
-  if (!quiz) throw new HttpError(404, 'Quiz no encontrado');
+  if (!quiz || quiz.createdById !== adminId) throw new HttpError(404, 'Quiz no encontrado');
   return quiz;
 }
+
+export { slugExists };
 
 export default router;

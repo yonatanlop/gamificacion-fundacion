@@ -8,6 +8,7 @@ import ResultsPage from './pages/admin/ResultsPage.jsx';
 import SurveyPresent from './pages/admin/SurveyPresent.jsx';
 import AdminsPage from './pages/admin/AdminsPage.jsx';
 import IconLibraryPage from './pages/admin/IconLibraryPage.jsx';
+import ShareBell from './components/ShareBell.jsx';
 import GameIntroPage from './pages/play/GameIntroPage.jsx';
 import GamePlayPage from './pages/play/GamePlayPage.jsx';
 import GameResultPage from './pages/play/GameResultPage.jsx';
@@ -44,6 +45,7 @@ function AdminShell({ children }) {
             )}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm text-slate-500">
+            <ShareBell />
             <span>{admin?.name}</span>
             <button onClick={logout} className="rounded bg-slate-200 px-3 py-1 hover:bg-slate-300">
               Salir

@@ -6,6 +6,7 @@ import { notFound, errorHandler } from './middleware/error.js';
 import authRoutes from './routes/auth.routes.js';
 import adminRoutes from './routes/admins.routes.js';
 import quizRoutes from './routes/quizzes.routes.js';
+import shareRoutes from './routes/shares.routes.js';
 import questionRoutes from './routes/questions.routes.js';
 import uploadRoutes from './routes/uploads.routes.js';
 import playRoutes from './routes/play.routes.js';
@@ -37,6 +38,7 @@ export function createApp() {
   app.use('/api/auth', authRoutes);
   app.use('/api/admins', adminRoutes);
   app.use('/api/quizzes', quizRoutes);
+  app.use('/api/shares', shareRoutes);
   app.use('/api/questions', questionRoutes);
   app.use('/api/uploads', uploadRoutes);
   app.use('/api/play', playRoutes);

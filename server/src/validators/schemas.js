@@ -155,6 +155,10 @@ export const reorderSchema = z.object({
   orderedIds: z.array(z.string()).min(1),
 });
 
+export const shareCreateSchema = z.object({
+  email: z.string().trim().toLowerCase().email(),
+});
+
 export const startPlaySchema = z.object({
   nickname: z.string().trim().min(1).max(60).optional(),
 });

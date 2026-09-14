@@ -45,14 +45,16 @@ enum SessionStatus {
 }
 
 model Admin {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String
-  name         String
-  role         AdminRole @default(EDITOR)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  quizzes      Quiz[]
+  id             String      @id @default(cuid())
+  email          String      @unique
+  passwordHash   String
+  name           String
+  role           AdminRole   @default(EDITOR)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  quizzes        Quiz[]
+  sharesSent     QuizShare[] @relation("SharesSent")
+  sharesReceived QuizShare[] @relation("SharesReceived")
 }
 
 model Quiz {
@@ -69,8 +71,23 @@ model Quiz {
   createdBy   Admin?        @relation(fields: [createdById], references: [id], onDelete: SetNull)
   questions   Question[]
   sessions    GameSession[]
+  shares      QuizShare[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+}
+
+model QuizShare {
+  id          String   @id @default(cuid())
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  fromAdminId String
+  fromAdmin   Admin    @relation("SharesSent", fields: [fromAdminId], references: [id], onDelete: Cascade)
+  toAdminId   String
+  toAdmin     Admin    @relation("SharesReceived", fields: [toAdminId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([quizId, toAdminId])
+  @@index([toAdminId])
 }
 
 model Question {
