@@ -6,11 +6,13 @@ import { expandSearchTerms } from '../lib/iconSynonyms.js';
 
 const PAGE = 120;
 
-export function buildIconUrl(icon, { color, stroke, size } = {}) {
+export function buildIconUrl(icon, { color, stroke, size, hue, mono } = {}) {
   const params = new URLSearchParams();
   if (color) params.set('color', color);
   if (stroke) params.set('stroke', stroke);
   if (size) params.set('size', size);
+  if (mono) params.set('mono', mono);
+  else if (hue) params.set('hue', hue);
   const qs = params.toString();
   return `/icons/${icon.set}/${icon.name}.svg${qs ? `?${qs}` : ''}`;
 }
@@ -32,6 +34,9 @@ export default function IconPicker({ onPick, onClose }) {
   const [color, setColor] = useState('#111827');
   const [stroke, setStroke] = useState(2);
   const [size, setSize] = useState(48);
+  const [hue, setHue] = useState(0);
+  const [monoOn, setMonoOn] = useState(false);
+  const [mono, setMono] = useState('#111827');
   const [limit, setLimit] = useState(PAGE);
 
   const filtered = useMemo(() => {
@@ -46,7 +51,11 @@ export default function IconPicker({ onPick, onClose }) {
   const visible = filtered.slice(0, limit);
   const activeSource = data?.sources.find((s) => s.set === tab);
   const recolorable = activeSource?.recolorable !== false;
-  const opts = recolorable ? { color, stroke, size } : { size };
+  const opts = recolorable
+    ? { color, stroke, size }
+    : monoOn
+      ? { size, mono }
+      : { size, hue: hue || undefined };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
@@ -114,7 +123,32 @@ export default function IconPicker({ onPick, onClose }) {
               </label>
             </>
           ) : (
-            <span className="text-xs text-slate-400">Íconos a color fijo — no se pueden recolorear.</span>
+            <>
+              <label className="flex items-center gap-1 text-xs text-slate-500">
+                <input type="checkbox" checked={monoOn} onChange={(e) => setMonoOn(e.target.checked)} />
+                Silueta
+                <input
+                  type="color"
+                  value={mono}
+                  onChange={(e) => setMono(e.target.value)}
+                  disabled={!monoOn}
+                  className="h-8 w-9 cursor-pointer rounded border border-slate-300 disabled:opacity-40"
+                />
+              </label>
+              <label className="flex items-center gap-1 text-xs text-slate-500">
+                Tono
+                <input
+                  type="range"
+                  min="0"
+                  max="360"
+                  step="10"
+                  value={hue}
+                  disabled={monoOn}
+                  onChange={(e) => setHue(Number(e.target.value))}
+                  className="w-20 disabled:opacity-40"
+                />
+              </label>
+            </>
           )}
           <label className="flex items-center gap-1 text-xs text-slate-500">
             Tamaño

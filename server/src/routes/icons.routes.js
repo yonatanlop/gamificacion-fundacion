@@ -43,6 +43,39 @@ function applyParams(svg, query) {
   return openTag + rest;
 }
 
+/**
+ * Para íconos a color fijo (Fluent Emoji, Noto), que no usan currentColor:
+ * - mono: convierte el ícono en una silueta plana de un solo color, usando su
+ *   propia forma (alfa) como máscara.
+ * - hue: gira toda la paleta (feColorMatrix hueRotate), conservando sombras y
+ *   brillos relativos — no hace falta saber los colores originales.
+ * Ambos quedan "horneados" dentro del SVG, así que también se ven al descargar
+ * el archivo, no solo en la vista previa.
+ */
+function applyColorEffects(svg, query) {
+  const mono = HEX_COLOR.test(query.mono || '') ? query.mono : null;
+  const hue = mono ? null : clamp(query.hue, 0, 360);
+  if (!mono && !hue) return svg;
+
+  const vb = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+  const w = vb ? vb[1] : 24;
+  const h = vb ? vb[2] : 24;
+  const openEnd = svg.indexOf('>') + 1;
+  const closeStart = svg.lastIndexOf('</svg>');
+  if (openEnd <= 0 || closeStart < 0) return svg;
+  const openTag = svg.slice(0, openEnd);
+  const body = svg.slice(openEnd, closeStart);
+
+  if (mono) {
+    return (
+      `${openTag}<defs><mask id="mono" maskUnits="userSpaceOnUse" x="0" y="0" width="${w}" height="${h}" ` +
+      `style="mask-type:alpha">${body}</mask></defs>` +
+      `<rect x="0" y="0" width="${w}" height="${h}" fill="${mono}" mask="url(#mono)"/></svg>`
+    );
+  }
+  return `${openTag}<defs><filter id="hue"><feColorMatrix type="hueRotate" values="${hue}"/></filter></defs><g filter="url(#hue)">${body}</g></svg>`;
+}
+
 // GET /api/icons/manifest — índice para el buscador del picker (público, sin datos sensibles).
 export const iconsApiRouter = Router();
 iconsApiRouter.get('/manifest', (req, res) => {
@@ -50,7 +83,7 @@ iconsApiRouter.get('/manifest', (req, res) => {
   res.json(manifest);
 });
 
-// GET /icons/:set/:name.svg?color=&stroke=&size= — sirve el SVG ya personalizado.
+// GET /icons/:set/:name.svg?color=&stroke=&size=&hue=&mono= — sirve el SVG ya personalizado.
 export const iconsStaticRouter = Router();
 iconsStaticRouter.get(
   '/:set/:file',
@@ -65,7 +98,8 @@ iconsStaticRouter.get(
     if (!filePath.startsWith(ICONS_DIR)) throw new HttpError(404, 'Ícono no encontrado');
 
     const raw = fs.readFileSync(filePath, 'utf8');
-    const svg = applyParams(raw, req.query);
+    let svg = applyParams(raw, req.query);
+    svg = applyColorEffects(svg, req.query);
     res.set('Content-Type', 'image/svg+xml');
     res.set('Cache-Control', 'public, max-age=31536000, immutable');
     res.send(svg);

@@ -16,7 +16,23 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = path.resolve(__dirname, '../server/assets/icons');
 const NAME_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const SKIN_TONE_RE = /-skin-tone|-tone\d/; // variantes de tono de piel: se omiten (ruido y duplican el concepto base)
+
+// Variantes de tono de piel (Fitzpatrick): se omiten porque duplican el
+// concepto base y son puro ruido para la búsqueda. Distintos sets las nombran
+// distinto — Noto: "...-light-skin-tone", Fluent Emoji: "...-light" a secas —
+// así que en vez de una lista fija de sufijos, se verifica que exista el
+// ícono "base" (sin el sufijo de tono) antes de descartar: así no se pierden
+// íconos que de casualidad terminan en esas palabras (p. ej. "traffic-light").
+const TONE_TAIL_RE = /-(medium-light|medium-dark|light|medium|dark)(-skin-tone)?$/;
+function isToneVariant(name, allNames) {
+  let base = name;
+  let strippedAny = false;
+  while (TONE_TAIL_RE.test(base)) {
+    base = base.replace(TONE_TAIL_RE, '');
+    strippedAny = true;
+  }
+  return strippedAny && allNames.has(base);
+}
 
 function sanitizeSvg(raw) {
   return raw
@@ -74,10 +90,11 @@ function collectIconifySet({ setName, pkgDir, license, url }) {
   const destDir = path.join(OUT_DIR, setName);
   fs.mkdirSync(destDir, { recursive: true });
 
+  const allNames = new Set(Object.keys(icons.icons));
   const entries = [];
   let skipped = 0;
   for (const [name, def] of Object.entries(icons.icons)) {
-    if (!NAME_RE.test(name) || SKIN_TONE_RE.test(name)) {
+    if (!NAME_RE.test(name) || isToneVariant(name, allNames)) {
       skipped += 1;
       continue;
     }

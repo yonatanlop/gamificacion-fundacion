@@ -19,6 +19,9 @@ export default function IconLibraryPage() {
   const [color, setColor] = useState('#111827');
   const [stroke, setStroke] = useState(2);
   const [size, setSize] = useState(64);
+  const [hue, setHue] = useState(0);
+  const [monoOn, setMonoOn] = useState(false);
+  const [mono, setMono] = useState('#111827');
   const [limit, setLimit] = useState(PAGE);
   const [selected, setSelected] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -35,7 +38,11 @@ export default function IconLibraryPage() {
   const visible = filtered.slice(0, limit);
   const activeSource = data?.sources.find((s) => s.set === tab);
   const recolorable = activeSource?.recolorable !== false;
-  const opts = recolorable ? { color, stroke, size } : { size };
+  const opts = recolorable
+    ? { color, stroke, size }
+    : monoOn
+      ? { size, mono }
+      : { size, hue: hue || undefined };
   const selectedSource = selected && data?.sources.find((s) => s.set === selected.set);
 
   function downloadIcon(icon) {
@@ -120,7 +127,32 @@ export default function IconLibraryPage() {
               </label>
             </>
           ) : (
-            <span className="text-sm text-slate-500">Íconos a color fijo — no se pueden recolorear.</span>
+            <>
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                <input type="checkbox" checked={monoOn} onChange={(e) => setMonoOn(e.target.checked)} />
+                Silueta de un color
+                <input
+                  type="color"
+                  value={mono}
+                  onChange={(e) => setMono(e.target.value)}
+                  disabled={!monoOn}
+                  className="h-8 w-9 cursor-pointer rounded border border-slate-300 disabled:opacity-40"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                Tono
+                <input
+                  type="range"
+                  min="0"
+                  max="360"
+                  step="10"
+                  value={hue}
+                  disabled={monoOn}
+                  onChange={(e) => setHue(Number(e.target.value))}
+                  className="disabled:opacity-40"
+                />
+              </label>
+            </>
           )}
           <label className="flex items-center gap-2 text-sm text-slate-600">
             Tamaño

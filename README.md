@@ -201,7 +201,7 @@ docker run --rm -v "$(basename "$PWD" | tr 'A-Z' 'a-z')_uploads":/data -v "$PWD"
 | POST | `/api/play/sessions/:id/answer` | — | Responder una pregunta |
 | POST | `/api/play/sessions/:id/finish` | — | Finalizar y ver resumen |
 | GET | `/api/icons/manifest` | — | Índice de íconos para el buscador del picker |
-| GET | `/icons/:set/:name.svg` | — | Ícono SVG personalizado (`?color=&stroke=&size=`) |
+| GET | `/icons/:set/:name.svg` | — | Ícono SVG personalizado (`?color=&stroke=&size=&hue=&mono=`) |
 
 ## Librería de íconos
 
@@ -218,20 +218,29 @@ assets de Flaticon, que exigen atribución o licencia paga):
 |---|---|---|---|
 | [Tabler Icons](https://tabler.io/icons) | MIT | ~5.100 | Línea, un solo color — **recoloreable** |
 | [Lucide](https://lucide.dev) | ISC | ~1.500 | Línea, un solo color — **recoloreable** |
-| [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (estilo Flat) | MIT | ~3.200 | Emoji a todo color — color fijo |
-| [Noto Emoji](https://github.com/googlefonts/noto-emoji) | Apache-2.0 | ~1.700 | Emoji a todo color — color fijo |
+| [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (estilo Flat) | MIT | ~1.600 | Emoji a todo color — color fijo |
+| [Noto Emoji](https://github.com/googlefonts/noto-emoji) | Apache-2.0 | ~1.900 | Emoji a todo color — color fijo |
 
-- Los sets de línea (Tabler/Lucide) se pueden recolorear y ajustar el grosor;
-  los de emoji a color (Fluent/Noto) no — cada uno ya trae varios tonos fijos
-  y el control de color no aplicaría. El picker oculta esos controles
-  automáticamente para el set que no los soporta (`recolorable: false` en el
-  manifest). En ambos casos el tamaño sí es ajustable.
+- Los sets de línea (Tabler/Lucide) se pueden recolorear (color exacto) y
+  ajustar el grosor. Los de emoji a color (Fluent/Noto) traen varios tonos
+  fijos por ícono, así que un control de "un solo color" no aplicaría igual;
+  en su lugar el picker ofrece:
+  - **Tono**: gira toda la paleta (`feColorMatrix hueRotate` dentro del SVG)
+    conservando sombras y brillos — `?hue=180`.
+  - **Silueta de un color**: convierte el ícono en una silueta plana de un
+    color exacto, usando su propia forma como máscara de alfa — `?mono=%23ff0000`.
+  - Ambos efectos quedan horneados en el SVG devuelto (no son solo CSS), así
+    que también se ven al descargar el archivo. El picker muestra el control
+    que corresponde según `recolorable` en el manifest. El tamaño es ajustable
+    siempre.
 - Se importan una sola vez con `scripts/import-icons.mjs` (usa los paquetes
   npm `@tabler/icons`, `lucide-static`, `@iconify-json/fluent-emoji-flat` y
   `@iconify-json/noto`) y quedan **committeados** en `server/assets/icons/`
-  (~20 MB, ~11.500 íconos) — no hay llamadas a servicios externos en
-  producción. Se descartan las variantes de tono de piel de los emoji (ruido
-  y duplican el concepto base).
+  (~16 MB, ~10.150 íconos) — no hay llamadas a servicios externos en
+  producción. Se descartan las variantes de tono de piel de los emoji: se
+  detectan comparando contra el ícono "base" sin sufijo de tono (cada set las
+  nombra distinto — Noto: `...-light-skin-tone`, Fluent: `...-light` — así que
+  no se usa una lista fija de sufijos).
 - Cada ícono es editable al elegirlo: color, grosor de línea y tamaño (se
   aplican como parámetros de la URL, p. ej.
   `/icons/tabler/home.svg?color=%232563eb&stroke=1.5&size=48`), así que se
