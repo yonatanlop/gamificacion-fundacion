@@ -234,6 +234,16 @@ router.get(
   }),
 );
 
+// Vacía las respuestas de un juego (borra partidas/jugadores/respuestas), sin tocar preguntas ni configuración.
+router.delete(
+  '/:id/results',
+  asyncHandler(async (req, res) => {
+    const quiz = await getQuizOr404(req.params.id, req.admin.id);
+    await prisma.gameSession.deleteMany({ where: { quizId: quiz.id } });
+    res.status(204).end();
+  }),
+);
+
 // Resultados agregados de un Sondeo: conteo por opción + textos "Otra".
 router.get(
   '/:id/survey-results',

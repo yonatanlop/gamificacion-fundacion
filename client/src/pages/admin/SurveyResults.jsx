@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client.js';
-import { Button, Card, Spinner, Toggle } from '../../components/ui.jsx';
+import { Button, Card, Spinner, Toggle, ConfirmButton } from '../../components/ui.jsx';
 
 export default function SurveyResults() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [live, setLive] = useState(true);
 
   const { data, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useQuery({
@@ -14,6 +15,14 @@ export default function SurveyResults() {
     queryFn: () => api.authGet(`/quizzes/${id}/survey-results`),
     refetchInterval: live ? 5000 : false,
     refetchIntervalInBackground: true,
+  });
+
+  const clearResults = useMutation({
+    mutationFn: () => api.authDel(`/quizzes/${id}/results`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['survey-results', id] });
+      qc.invalidateQueries({ queryKey: ['quizzes'] });
+    },
   });
 
   if (isLoading) return <Spinner />;
@@ -40,9 +49,13 @@ export default function SurveyResults() {
           <Button variant="ghost" onClick={() => refetch()}>
             {isFetching ? 'Actualizando…' : 'Actualizar'}
           </Button>
+          <ConfirmButton onConfirm={() => clearResults.mutate()} confirmLabel="¿Vaciar respuestas?">
+            Vaciar respuestas
+          </ConfirmButton>
           <Button onClick={() => navigate(`/admin/quizzes/${id}/presentar`)}>Proyectar ▶</Button>
         </div>
       </div>
+      {clearResults.isError && <p className="text-sm text-red-600">{clearResults.error.message}</p>}
 
       <Card className="text-center">
         <p className="text-3xl font-extrabold text-indigo-700">{respondents}</p>
