@@ -84,7 +84,7 @@ export const settingsSchema = z
   .passthrough();
 
 export const quizCreateSchema = z.object({
-  type: z.enum(['QUIZ', 'SURVEY']).default('QUIZ'),
+  type: z.enum(['QUIZ', 'SURVEY', 'BALLOONS']).default('QUIZ'),
   title: z.string().min(1).max(200),
   description: z.string().max(2000).optional().or(z.literal('')),
   slug: z.string().max(80).optional(),
@@ -114,6 +114,30 @@ export const questionSchema = z
     timeLimit: z.number().int().min(5).max(240).default(30),
     points: z.number().int().min(0).max(10000).default(1000),
     pointsMode: z.enum(['STANDARD', 'DOUBLE', 'ZERO']).default('STANDARD'),
+    options: z.array(optionSchema).min(2).max(6),
+  })
+  .refine((q) => q.options.some((o) => o.isCorrect), {
+    message: 'Debe haber al menos una opción correcta',
+    path: ['options'],
+  })
+  .refine((q) => q.type !== 'SINGLE' || q.options.filter((o) => o.isCorrect).length === 1, {
+    message: 'Una pregunta de opción única debe tener exactamente una respuesta correcta',
+    path: ['options'],
+  })
+  .refine((q) => q.type !== 'TRUE_FALSE' || q.options.length === 2, {
+    message: 'Verdadero/Falso debe tener exactamente 2 opciones',
+    path: ['options'],
+  });
+
+// Globo: como una pregunta de Quiz (con respuesta correcta), pero sin tiempo ni
+// puntos, y con color/velocidad propios para la animación.
+export const balloonQuestionSchema = z
+  .object({
+    type: z.enum(['SINGLE', 'TRUE_FALSE']).default('SINGLE'),
+    text: z.string().min(1).max(1000),
+    image: imageRef.optional().or(z.literal('')),
+    balloonColor: hexColor.default('#ef4444'),
+    balloonSpeed: z.enum(['SLOW', 'MEDIUM', 'FAST']).default('MEDIUM'),
     options: z.array(optionSchema).min(2).max(6),
   })
   .refine((q) => q.options.some((o) => o.isCorrect), {

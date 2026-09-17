@@ -20,8 +20,9 @@ export default function GameIntroPage() {
   if (isLoading) return <CenteredMsg>Cargando juego…</CenteredMsg>;
   if (isError) return <CenteredMsg>Este juego no está disponible.</CenteredMsg>;
 
-  // Los sondeos tienen su propia pantalla.
+  // Los sondeos y los globos tienen su propia pantalla.
   if (data.quiz.type === 'SURVEY') return <Navigate to={`/s/${slug}`} replace />;
+  if (data.quiz.type === 'BALLOONS') return <Navigate to={`/globos/${slug}`} replace />;
 
   const quiz = data.quiz;
   const helper = themeToStyle(quiz.theme);

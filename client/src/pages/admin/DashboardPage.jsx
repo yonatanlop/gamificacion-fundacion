@@ -4,8 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client.js';
 import { Button, Card, Input, Select, Spinner, ConfirmButton } from '../../components/ui.jsx';
 
-const publicPath = (quiz) => (quiz.type === 'SURVEY' ? `/s/${quiz.slug}` : `/play/${quiz.slug}`);
+const publicPath = (quiz) =>
+  quiz.type === 'SURVEY' ? `/s/${quiz.slug}` : quiz.type === 'BALLOONS' ? `/globos/${quiz.slug}` : `/play/${quiz.slug}`;
 const publicUrl = (quiz) => `${window.location.origin}${publicPath(quiz)}`;
+const typeLabel = (type) => (type === 'SURVEY' ? 'Sondeo' : type === 'BALLOONS' ? 'Globos' : 'Quiz');
+const unitLabel = (type) => (type === 'SURVEY' ? 'pantalla(s)' : type === 'BALLOONS' ? 'globo(s)' : 'pregunta(s)');
 
 export default function DashboardPage() {
   const qc = useQueryClient();
@@ -75,6 +78,7 @@ export default function DashboardPage() {
           <Select label="Tipo" value={type} onChange={(e) => setType(e.target.value)} className="w-48">
             <option value="QUIZ">Quiz (preguntas con puntaje)</option>
             <option value="SURVEY">Sondeo (consulta, sin puntaje)</option>
+            <option value="BALLOONS">Globos (reventar y responder)</option>
           </Select>
           <Button onClick={() => create.mutate()} disabled={create.isPending}>
             {create.isPending ? 'Creando…' : 'Crear'}
@@ -83,7 +87,9 @@ export default function DashboardPage() {
         <p className="mt-2 text-xs text-slate-500">
           {type === 'SURVEY'
             ? 'Sondeo: pantallas simples para tocar opciones. Ideal para reflexión o lluvia de ideas guiada.'
-            : 'Quiz: preguntas de opción con temporizador y puntaje.'}
+            : type === 'BALLOONS'
+              ? 'Globos: suben globos de colores, al reventarlos aparece una pregunta. Sin tiempo ni puntaje.'
+              : 'Quiz: preguntas de opción con temporizador y puntaje.'}
         </p>
         {create.isError && <p className="mt-2 text-sm text-red-600">{create.error.message}</p>}
       </Card>
@@ -95,7 +101,7 @@ export default function DashboardPage() {
               <h3 className="font-semibold text-slate-800">{quiz.title}</h3>
               <div className="flex shrink-0 flex-col items-end gap-1">
                 <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">
-                  {quiz.type === 'SURVEY' ? 'Sondeo' : 'Quiz'}
+                  {typeLabel(quiz.type)}
                 </span>
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
@@ -107,8 +113,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <p className="text-sm text-slate-500">
-              {quiz._count.questions} {quiz.type === 'SURVEY' ? 'pantalla(s)' : 'pregunta(s)'} ·{' '}
-              {quiz._count.sessions} respuesta(s)
+              {quiz._count.questions} {unitLabel(quiz.type)} · {quiz._count.sessions} respuesta(s)
             </p>
             {quiz.status === 'PUBLISHED' && (
               <button

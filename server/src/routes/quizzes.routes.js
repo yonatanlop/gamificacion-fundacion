@@ -4,12 +4,19 @@ import { asyncHandler, HttpError } from '../middleware/error.js';
 import { requireAuth } from '../middleware/auth.js';
 import { slugify, uniqueSlug } from '../lib/slug.js';
 import { mergeTheme, mergeSettings } from '../lib/defaults.js';
-import { fullQuizInclude, questionCreateData, surveyScreenData, buildQuizCopyData } from '../services/quizPayload.js';
+import {
+  fullQuizInclude,
+  questionCreateData,
+  surveyScreenData,
+  balloonQuestionData,
+  buildQuizCopyData,
+} from '../services/quizPayload.js';
 import {
   quizCreateSchema,
   quizUpdateSchema,
   questionSchema,
   surveyScreenSchema,
+  balloonQuestionSchema,
   reorderSchema,
   shareCreateSchema,
 } from '../validators/schemas.js';
@@ -111,7 +118,9 @@ router.post(
         400,
         quiz.type === 'SURVEY'
           ? 'No se puede publicar un sondeo sin pantallas'
-          : 'No se puede publicar un quiz sin preguntas',
+          : quiz.type === 'BALLOONS'
+            ? 'No se puede publicar un juego de globos sin globos'
+            : 'No se puede publicar un quiz sin preguntas',
       );
     }
     const updated = await prisma.quiz.update({
@@ -176,7 +185,9 @@ router.post(
     const data =
       quiz.type === 'SURVEY'
         ? surveyScreenData(surveyScreenSchema.parse(req.body), quiz.questions.length)
-        : questionCreateData(questionSchema.parse(req.body), quiz.questions.length);
+        : quiz.type === 'BALLOONS'
+          ? balloonQuestionData(balloonQuestionSchema.parse(req.body), quiz.questions.length)
+          : questionCreateData(questionSchema.parse(req.body), quiz.questions.length);
     const question = await prisma.question.create({
       data: { quizId: quiz.id, ...data },
       include: { options: { orderBy: { order: 'asc' } } },

@@ -44,6 +44,13 @@ export const DEFAULT_SURVEY_SETTINGS = {
   closingMessage: '¡Listo! Tu respuesta quedó registrada. Muchas gracias.',
 };
 
+// Ajustes propios del tipo "Globos".
+export const DEFAULT_BALLOONS_SETTINGS = {
+  askNickname: true,
+  nicknameLabel: 'Tu nombre',
+  closingMessage: '¡Reventaste todos los globos! Gracias por participar.',
+};
+
 export const THEME_PRESETS = {
   clasico: DEFAULT_THEME,
   claro: {
@@ -84,6 +91,7 @@ export function mergeTheme(partial) {
 }
 
 export function mergeSettings(partial, type = 'QUIZ') {
-  const base = type === 'SURVEY' ? DEFAULT_SURVEY_SETTINGS : DEFAULT_SETTINGS;
+  const base =
+    type === 'SURVEY' ? DEFAULT_SURVEY_SETTINGS : type === 'BALLOONS' ? DEFAULT_BALLOONS_SETTINGS : DEFAULT_SETTINGS;
   return { ...base, ...(partial || {}) };
 }

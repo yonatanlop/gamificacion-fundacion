@@ -13,6 +13,7 @@ import GameIntroPage from './pages/play/GameIntroPage.jsx';
 import GamePlayPage from './pages/play/GamePlayPage.jsx';
 import GameResultPage from './pages/play/GameResultPage.jsx';
 import SurveyRunner from './pages/play/SurveyRunner.jsx';
+import BalloonRunner from './pages/play/BalloonRunner.jsx';
 
 function RequireAuth({ children }) {
   const { admin, loading } = useAuth();
@@ -129,6 +130,9 @@ export default function App() {
 
       {/* Sondeo / Consulta rápida */}
       <Route path="/s/:slug" element={<SurveyRunner />} />
+
+      {/* Globos */}
+      <Route path="/globos/:slug" element={<BalloonRunner />} />
 
       <Route path="*" element={<div className="p-10 text-center text-slate-500">Página no encontrada</div>} />
     </Routes>

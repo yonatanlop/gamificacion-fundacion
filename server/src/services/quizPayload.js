@@ -28,6 +28,8 @@ export function buildQuizCopyData(src, { slug, createdById, title }) {
         points: q.points,
         pointsMode: q.pointsMode,
         allowOther: q.allowOther,
+        balloonColor: q.balloonColor,
+        balloonSpeed: q.balloonSpeed,
         options: {
           create: q.options.map((o, oi) => ({
             order: oi,
@@ -54,6 +56,33 @@ export function questionCreateData(input, order) {
     points: input.points,
     pointsMode: input.pointsMode,
     allowOther: false,
+    options: {
+      create: input.options.map((o, i) => ({
+        order: i,
+        text: o.text || null,
+        image: o.image || null,
+        color: o.color || null,
+        isCorrect: !!o.isCorrect,
+      })),
+    },
+  };
+}
+
+/** Normaliza el payload validado de un globo a data de Prisma: como Quiz (con respuesta
+ * correcta), pero sin tiempo ni puntos, y con color/velocidad para la animación. */
+export function balloonQuestionData(input, order) {
+  return {
+    order,
+    type: input.type,
+    text: input.text,
+    image: input.image || null,
+    mediaType: input.image ? 'image' : 'none',
+    timeLimit: 0,
+    points: 0,
+    pointsMode: 'ZERO',
+    allowOther: false,
+    balloonColor: input.balloonColor,
+    balloonSpeed: input.balloonSpeed,
     options: {
       create: input.options.map((o, i) => ({
         order: i,

@@ -37,6 +37,8 @@ export function toPublicQuiz(quiz, { seed = 'static', shuffleQuestions = false, 
         points: q.points,
         pointsMode: q.pointsMode,
         allowOther: !!q.allowOther,
+        balloonColor: q.balloonColor,
+        balloonSpeed: q.balloonSpeed,
         options: options.map((o) => ({
           id: o.id,
           text: o.text,
@@ -61,6 +63,13 @@ function publicSettings(settings, type) {
       acceptingResponses: s.acceptingResponses !== false,
       resultsVisibility: s.resultsVisibility || 'admin',
       closingMessage: s.closingMessage || '¡Listo! Tu respuesta quedó registrada. Muchas gracias.',
+    };
+  }
+  if (type === 'BALLOONS') {
+    return {
+      askNickname: s.askNickname !== false,
+      nicknameLabel: s.nicknameLabel || 'Tu nombre',
+      closingMessage: s.closingMessage || '¡Reventaste todos los globos! Gracias por participar.',
     };
   }
   return {

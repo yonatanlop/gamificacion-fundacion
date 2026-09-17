@@ -8,6 +8,7 @@ import ThemeEditor from '../../components/ThemeEditor.jsx';
 import GamePreview from '../../components/GamePreview.jsx';
 import QuestionForm from '../../components/QuestionForm.jsx';
 import SurveyEditor from '../../components/SurveyEditor.jsx';
+import BalloonsEditor from '../../components/BalloonsEditor.jsx';
 import ShareBox from '../../components/ShareBox.jsx';
 
 export default function QuizEditorPage() {
@@ -38,10 +39,11 @@ export default function QuizEditorPage() {
   if (isError) return <p className="text-red-600">{error.message}</p>;
 
   const isSurvey = quiz.type === 'SURVEY';
-  const publicPath = isSurvey ? `/s/${quiz.slug}` : `/play/${quiz.slug}`;
+  const isBalloons = quiz.type === 'BALLOONS';
+  const publicPath = isSurvey ? `/s/${quiz.slug}` : isBalloons ? `/globos/${quiz.slug}` : `/play/${quiz.slug}`;
   const playLink = `${window.location.origin}${publicPath}`;
   const TABS = [
-    ['contenido', isSurvey ? 'Pantallas' : 'Contenido'],
+    ['contenido', isSurvey ? 'Pantallas' : isBalloons ? 'Globos' : 'Contenido'],
     ['diseno', 'Diseño'],
     ['ajustes', 'Ajustes'],
   ];
@@ -54,7 +56,7 @@ export default function QuizEditorPage() {
         </Link>
         <h1 className="font-display text-xl font-bold">{quiz.title}</h1>
         <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">
-          {isSurvey ? 'Sondeo' : 'Quiz'}
+          {isSurvey ? 'Sondeo' : isBalloons ? 'Globos' : 'Quiz'}
         </span>
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
@@ -108,12 +110,14 @@ export default function QuizEditorPage() {
         ))}
       </div>
 
-      {tab === 'contenido' && (isSurvey ? <SurveyEditor quiz={quiz} /> : <ContentTab quiz={quiz} />)}
+      {tab === 'contenido' &&
+        (isSurvey ? <SurveyEditor quiz={quiz} /> : isBalloons ? <BalloonsEditor quiz={quiz} /> : <ContentTab quiz={quiz} />)}
       {tab === 'diseno' && <DesignTab quiz={quiz} onSave={(theme) => patch.mutate({ theme })} saving={patch.isPending} />}
       {tab === 'ajustes' && (
         <SettingsTab
           quiz={quiz}
           isSurvey={isSurvey}
+          isBalloons={isBalloons}
           onSave={(body) => patch.mutate(body)}
           saving={patch.isPending}
           error={patch.isError ? patch.error.message : ''}
@@ -254,7 +258,7 @@ function DesignTab({ quiz, onSave, saving }) {
 }
 
 /* -------------------------------- Ajustes ------------------------------- */
-function SettingsTab({ quiz, isSurvey, onSave, saving, error }) {
+function SettingsTab({ quiz, isSurvey, isBalloons, onSave, saving, error }) {
   const [form, setForm] = useState({
     title: quiz.title,
     description: quiz.description || '',
@@ -295,7 +299,29 @@ function SettingsTab({ quiz, isSurvey, onSave, saving, error }) {
         onChange={(v) => setForm({ ...form, coverImage: v })}
       />
 
-      {isSurvey ? (
+      {isBalloons ? (
+        <>
+          <div className="rounded-lg border border-slate-200 p-3">
+            <p className="mb-2 text-sm font-semibold text-slate-800">Participación</p>
+            <Toggle
+              label="Pedir el nombre del participante"
+              checked={s.askNickname !== false}
+              onChange={(v) => setS('askNickname', v)}
+            />
+          </div>
+          <Input
+            label="Etiqueta del campo de nombre"
+            value={s.nicknameLabel || 'Tu nombre'}
+            onChange={(e) => setS('nicknameLabel', e.target.value)}
+          />
+          <Textarea
+            label="Mensaje al terminar"
+            rows={2}
+            value={s.closingMessage || ''}
+            onChange={(e) => setS('closingMessage', e.target.value)}
+          />
+        </>
+      ) : isSurvey ? (
         <>
           <div className="rounded-lg border border-slate-200 p-3">
             <p className="mb-2 text-sm font-semibold text-slate-800">Participación</p>

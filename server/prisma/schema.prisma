@@ -20,6 +20,7 @@ enum QuizStatus {
 enum GameType {
   QUIZ
   SURVEY
+  BALLOONS
 }
 
 enum QuestionType {
@@ -103,6 +104,8 @@ model Question {
   points     Int            @default(1000)
   pointsMode PointsMode     @default(STANDARD)
   allowOther Boolean        @default(false)
+  balloonColor String?
+  balloonSpeed String?      // 'SLOW' | 'MEDIUM' | 'FAST' (solo tipo BALLOONS)
   options    AnswerOption[]
 
   @@index([quizId])

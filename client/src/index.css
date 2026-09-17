@@ -22,3 +22,59 @@ body {
   color: var(--text);
   font-family: var(--font-family, 'Poppins'), 'Nunito', system-ui, sans-serif;
 }
+
+/* Globo animado del juego "Globos": sube desde abajo y, al llegar arriba sin
+   reventar, el loop infinito lo reinicia solo desde abajo (sin JS). */
+@keyframes balloon-rise {
+  from {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-58vh) rotate(3deg);
+  }
+  to {
+    transform: translateY(-118vh) rotate(-3deg);
+  }
+}
+
+.balloon {
+  position: absolute;
+  bottom: -18vh;
+  width: 68px;
+  height: 84px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  cursor: pointer;
+  animation-name: balloon-rise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  box-shadow: inset -8px -10px 16px rgba(0, 0, 0, 0.18), 0 6px 14px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.balloon:hover {
+  filter: brightness(1.08);
+}
+
+.balloon::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid currentColor;
+  transform: translateX(-50%);
+}
+
+.balloon::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -46px;
+  width: 2px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.55);
+  transform: translateX(-50%);
+}
