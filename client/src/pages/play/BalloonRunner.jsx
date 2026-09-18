@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.js';
 import { themeToStyle } from '../../lib/theme.js';
+import { playPop, playWin } from '../../lib/sound.js';
 import AnswerGrid from '../../components/AnswerGrid.jsx';
 
 const SPEED_SECONDS = { SLOW: 12, MEDIUM: 7, FAST: 4 };
@@ -31,7 +32,8 @@ export default function BalloonRunner() {
   const [answeredIds, setAnsweredIds] = useState(() => new Set());
   const [active, setActive] = useState(null); // pregunta abierta en el overlay
   const [feedback, setFeedback] = useState(null); // { isCorrect, correctOptionIds }
-  const [result, setResult] = useState(null);
+  const [mistakes, setMistakes] = useState(0);
+  const [burst, setBurst] = useState(null); // { x, y, color } explosión al reventar
 
   const quiz = session?.quiz || data?.quiz;
   const helper = useMemo(() => (quiz ? themeToStyle(quiz.theme) : null), [quiz]);
@@ -69,12 +71,22 @@ export default function BalloonRunner() {
       const res = await api.post(`/play/${slug}/start`, askNickname ? { nickname: nickname.trim() || undefined } : {});
       setSession(res);
       setAnsweredIds(new Set());
+      setMistakes(0);
       setPhase('play');
     } catch (err) {
       setError(err.message || 'No se pudo empezar');
     } finally {
       setBusy(false);
     }
+  }
+
+  function popBalloon(e, q) {
+    if (active || burst) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setBurst({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, color: q.balloonColor || '#ef4444' });
+    playPop();
+    setTimeout(() => setBurst(null), 500);
+    setTimeout(() => setActive(q), 180);
   }
 
   async function pick(optionId) {
@@ -87,6 +99,7 @@ export default function BalloonRunner() {
         selectedOptionIds: [optionId],
         timeMs: 0,
       });
+      if (!res.isCorrect) setMistakes((m) => m + 1);
       setFeedback({ isCorrect: res.isCorrect, correctOptionIds: res.correctOptionIds || [] });
     } catch (err) {
       setError(err.message || 'No se pudo enviar la respuesta');
@@ -96,18 +109,22 @@ export default function BalloonRunner() {
   }
 
   async function continueAfterAnswer() {
-    const nextAnswered = new Set(answeredIds);
-    nextAnswered.add(active.id);
-    setAnsweredIds(nextAnswered);
+    const wasCorrect = feedback?.isCorrect;
+    const finishedId = active.id;
     setActive(null);
     setFeedback(null);
+    if (!wasCorrect) return; // el globo sigue disponible: hay que reintentarlo
+
+    const nextAnswered = new Set(answeredIds);
+    nextAnswered.add(finishedId);
+    setAnsweredIds(nextAnswered);
 
     if (nextAnswered.size >= session.quiz.questions.length) {
       setBusy(true);
       try {
-        const fin = await api.post(`/play/sessions/${session.sessionId}/finish`);
-        setResult(fin);
+        await api.post(`/play/sessions/${session.sessionId}/finish`);
         setPhase('done');
+        playWin();
       } catch (err) {
         setError(err.message || 'No se pudo cerrar el juego');
       } finally {
@@ -166,7 +183,7 @@ export default function BalloonRunner() {
                       key={l.id}
                       type="button"
                       aria-label={`Reventar globo: ${q.text}`}
-                      onClick={() => setActive(q)}
+                      onClick={(e) => popBalloon(e, q)}
                       className="balloon"
                       style={{
                         left: `${l.left}%`,
@@ -182,19 +199,21 @@ export default function BalloonRunner() {
         )}
 
         {phase === 'done' && (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-            <div className="text-6xl">🎈</div>
-            <h2 className="font-extrabold" style={{ fontSize: 'calc(1.7rem * var(--heading-scale,1))' }}>
-              {data.quiz.settings.closingMessage || '¡Reventaste todos los globos!'}
+          <div className="relative flex flex-1 flex-col items-center justify-center gap-4 text-center">
+            <ConfettiLayer />
+            <div className="text-6xl">🎉</div>
+            <h2 className="font-extrabold" style={{ fontSize: 'calc(2rem * var(--heading-scale,1))' }}>
+              ¡Ganaste!
             </h2>
-            {result && (
-              <p className="text-lg opacity-90">
-                Aciertos: {result.correctCount} / {result.total}
-              </p>
-            )}
+            <p className="text-lg opacity-90">{data.quiz.settings.closingMessage || '¡Reventaste todos los globos!'}</p>
+            <p className="text-base font-semibold opacity-80">
+              {mistakes === 0 ? '🌟 ¡Sin errores, todos a la primera!' : `Lo lograste con ${mistakes} intento(s) extra.`}
+            </p>
           </div>
         )}
       </div>
+
+      {burst && <Burst x={burst.x} y={burst.y} color={burst.color} />}
 
       {active && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -218,13 +237,14 @@ export default function BalloonRunner() {
                 <p className="text-2xl font-extrabold" style={{ color: feedback.isCorrect ? '#16a34a' : '#dc2626' }}>
                   {feedback.isCorrect ? '¡Correcto!' : 'Incorrecto'}
                 </p>
+                {!feedback.isCorrect && <p className="text-sm opacity-70">El globo vuelve a subir, ¡inténtalo de nuevo!</p>}
                 <button
                   onClick={continueAfterAnswer}
                   disabled={busy}
                   className="rounded-xl px-8 py-3 text-lg font-extrabold text-white shadow-lg hover:brightness-110 disabled:opacity-60"
-                  style={{ backgroundColor: 'var(--primary)' }}
+                  style={{ backgroundColor: feedback.isCorrect ? 'var(--primary)' : '#dc2626' }}
                 >
-                  Continuar
+                  {feedback.isCorrect ? 'Continuar' : 'Intentar de nuevo'}
                 </button>
               </div>
             )}
@@ -258,6 +278,53 @@ function CloudLayer() {
             width: `${c.width}px`,
             animationDuration: `${c.duration}s`,
             animationDelay: `${-i * 7}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+const BURST_PIECES = Array.from({ length: 12 }, (_, i) => {
+  const angle = (i / 12) * Math.PI * 2;
+  const dist = 34 + seededRandom(`burst:${i}`) * 26;
+  return { dx: Math.cos(angle) * dist, dy: Math.sin(angle) * dist };
+});
+
+function Burst({ x, y, color }) {
+  return (
+    <div className="pointer-events-none fixed z-[60]" style={{ left: x, top: y }}>
+      {BURST_PIECES.map((p, i) => (
+        <span
+          key={i}
+          className="pop-shard"
+          style={{ backgroundColor: color, '--dx': `${p.dx}px`, '--dy': `${p.dy}px` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+const CONFETTI_COLORS = ['#ef4444', '#f59e0b', '#22c55e', '#2563eb', '#a855f7', '#ec4899'];
+const CONFETTI_PIECES = Array.from({ length: 26 }, (_, i) => ({
+  left: seededRandom(`confetti:${i}:l`) * 100,
+  color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+  duration: 2.4 + seededRandom(`confetti:${i}:d`) * 2,
+  delay: -seededRandom(`confetti:${i}:o`) * 4,
+}));
+
+function ConfettiLayer() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      {CONFETTI_PIECES.map((c, i) => (
+        <span
+          key={i}
+          className="confetti-piece"
+          style={{
+            left: `${c.left}%`,
+            backgroundColor: c.color,
+            animationDuration: `${c.duration}s`,
+            animationDelay: `${c.delay}s`,
           }}
         />
       ))}
