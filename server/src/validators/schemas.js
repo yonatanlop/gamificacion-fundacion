@@ -84,7 +84,7 @@ export const settingsSchema = z
   .passthrough();
 
 export const quizCreateSchema = z.object({
-  type: z.enum(['QUIZ', 'SURVEY', 'BALLOONS']).default('QUIZ'),
+  type: z.enum(['QUIZ', 'SURVEY', 'BALLOONS', 'BOTTLE']).default('QUIZ'),
   title: z.string().min(1).max(200),
   description: z.string().max(2000).optional().or(z.literal('')),
   slug: z.string().max(80).optional(),
@@ -173,6 +173,13 @@ export const surveyScreenSchema = z.object({
     .refine((opts) => opts.some((o) => (o.text && o.text.trim()) || (o.image && o.image.trim())), {
       message: 'Agrega al menos una opción con texto o imagen',
     }),
+});
+
+// Botella: pregunta abierta + respuesta modelo a revelar, sin opciones ni tiempo/puntos.
+export const bottleQuestionSchema = z.object({
+  text: z.string().min(1).max(1000),
+  image: imageRef.optional().or(z.literal('')),
+  answerText: z.string().min(1).max(2000),
 });
 
 export const reorderSchema = z.object({

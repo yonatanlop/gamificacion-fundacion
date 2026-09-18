@@ -6,6 +6,7 @@ import DashboardPage from './pages/admin/DashboardPage.jsx';
 import QuizEditorPage from './pages/admin/QuizEditorPage.jsx';
 import ResultsPage from './pages/admin/ResultsPage.jsx';
 import SurveyPresent from './pages/admin/SurveyPresent.jsx';
+import BottlePresent from './pages/admin/BottlePresent.jsx';
 import AdminsPage from './pages/admin/AdminsPage.jsx';
 import IconLibraryPage from './pages/admin/IconLibraryPage.jsx';
 import ShareBell from './components/ShareBell.jsx';
@@ -100,6 +101,14 @@ export default function App() {
         element={
           <RequireAuth>
             <SurveyPresent />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/quizzes/:id/ruleta"
+        element={
+          <RequireAuth>
+            <BottlePresent />
           </RequireAuth>
         }
       />

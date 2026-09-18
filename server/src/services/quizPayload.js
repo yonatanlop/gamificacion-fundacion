@@ -30,6 +30,7 @@ export function buildQuizCopyData(src, { slug, createdById, title }) {
         allowOther: q.allowOther,
         balloonColor: q.balloonColor,
         balloonSpeed: q.balloonSpeed,
+        answerText: q.answerText,
         options: {
           create: q.options.map((o, oi) => ({
             order: oi,
@@ -92,6 +93,24 @@ export function balloonQuestionData(input, order) {
         isCorrect: !!o.isCorrect,
       })),
     },
+  };
+}
+
+/** Normaliza el payload validado de una pregunta de Botella a data de Prisma:
+ * pregunta abierta + respuesta modelo a revelar, sin opciones ni tiempo/puntos. */
+export function bottleQuestionData(input, order) {
+  return {
+    order,
+    type: 'SINGLE',
+    text: input.text,
+    image: input.image || null,
+    mediaType: input.image ? 'image' : 'none',
+    timeLimit: 0,
+    points: 0,
+    pointsMode: 'ZERO',
+    allowOther: false,
+    answerText: input.answerText,
+    options: { create: [] },
   };
 }
 

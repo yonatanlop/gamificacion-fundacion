@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { prisma } from '../db.js';
 import { asyncHandler, HttpError } from '../middleware/error.js';
 import { requireAuth } from '../middleware/auth.js';
-import { questionSchema, surveyScreenSchema, balloonQuestionSchema } from '../validators/schemas.js';
-import { questionCreateData, surveyScreenData, balloonQuestionData } from '../services/quizPayload.js';
+import { questionSchema, surveyScreenSchema, balloonQuestionSchema, bottleQuestionSchema } from '../validators/schemas.js';
+import { questionCreateData, surveyScreenData, balloonQuestionData, bottleQuestionData } from '../services/quizPayload.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -24,7 +24,9 @@ router.patch(
         ? surveyScreenData(surveyScreenSchema.parse(req.body), existing.order)
         : existing.quiz.type === 'BALLOONS'
           ? balloonQuestionData(balloonQuestionSchema.parse(req.body), existing.order)
-          : questionCreateData(questionSchema.parse(req.body), existing.order);
+          : existing.quiz.type === 'BOTTLE'
+            ? bottleQuestionData(bottleQuestionSchema.parse(req.body), existing.order)
+            : questionCreateData(questionSchema.parse(req.body), existing.order);
 
     // Reemplaza las opciones por completo (más simple y predecible que hacer diff).
     const question = await prisma.$transaction(async (tx) => {

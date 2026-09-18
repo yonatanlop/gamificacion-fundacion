@@ -9,6 +9,7 @@ import GamePreview from '../../components/GamePreview.jsx';
 import QuestionForm from '../../components/QuestionForm.jsx';
 import SurveyEditor from '../../components/SurveyEditor.jsx';
 import BalloonsEditor from '../../components/BalloonsEditor.jsx';
+import BottleEditor from '../../components/BottleEditor.jsx';
 import ShareBox from '../../components/ShareBox.jsx';
 
 export default function QuizEditorPage() {
@@ -40,10 +41,11 @@ export default function QuizEditorPage() {
 
   const isSurvey = quiz.type === 'SURVEY';
   const isBalloons = quiz.type === 'BALLOONS';
+  const isBottle = quiz.type === 'BOTTLE';
   const publicPath = isSurvey ? `/s/${quiz.slug}` : isBalloons ? `/globos/${quiz.slug}` : `/play/${quiz.slug}`;
   const playLink = `${window.location.origin}${publicPath}`;
   const TABS = [
-    ['contenido', isSurvey ? 'Pantallas' : isBalloons ? 'Globos' : 'Contenido'],
+    ['contenido', isSurvey ? 'Pantallas' : isBalloons ? 'Globos' : isBottle ? 'Preguntas' : 'Contenido'],
     ['diseno', 'Diseño'],
     ['ajustes', 'Ajustes'],
   ];
@@ -56,7 +58,7 @@ export default function QuizEditorPage() {
         </Link>
         <h1 className="font-display text-xl font-bold">{quiz.title}</h1>
         <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">
-          {isSurvey ? 'Sondeo' : isBalloons ? 'Globos' : 'Quiz'}
+          {isSurvey ? 'Sondeo' : isBalloons ? 'Globos' : isBottle ? 'Botella' : 'Quiz'}
         </span>
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
@@ -68,12 +70,19 @@ export default function QuizEditorPage() {
         <div className="ml-auto flex flex-wrap gap-2">
           {quiz.status === 'PUBLISHED' ? (
             <>
-              <a href={playLink} target="_blank" rel="noreferrer">
-                <Button variant="secondary">Abrir ↗</Button>
-              </a>
+              {!isBottle && (
+                <a href={playLink} target="_blank" rel="noreferrer">
+                  <Button variant="secondary">Abrir ↗</Button>
+                </a>
+              )}
               {isSurvey && (
                 <a href={`/admin/quizzes/${id}/presentar`} target="_blank" rel="noreferrer">
                   <Button>Proyectar ▶</Button>
+                </a>
+              )}
+              {isBottle && (
+                <a href={`/admin/quizzes/${id}/ruleta`} target="_blank" rel="noreferrer">
+                  <Button>Presentar ▶</Button>
                 </a>
               )}
               <Button variant="ghost" onClick={() => publish.mutate('unpublish')}>
@@ -92,7 +101,7 @@ export default function QuizEditorPage() {
       </div>
       {publish.isError && <p className="text-sm text-red-600">{publish.error.message}</p>}
 
-      {quiz.status === 'PUBLISHED' && <ShareBox path={publicPath} />}
+      {quiz.status === 'PUBLISHED' && !isBottle && <ShareBox path={publicPath} />}
 
       <div className="flex gap-1 border-b border-slate-200">
         {TABS.map(([key, label]) => (
@@ -111,13 +120,22 @@ export default function QuizEditorPage() {
       </div>
 
       {tab === 'contenido' &&
-        (isSurvey ? <SurveyEditor quiz={quiz} /> : isBalloons ? <BalloonsEditor quiz={quiz} /> : <ContentTab quiz={quiz} />)}
+        (isSurvey ? (
+          <SurveyEditor quiz={quiz} />
+        ) : isBalloons ? (
+          <BalloonsEditor quiz={quiz} />
+        ) : isBottle ? (
+          <BottleEditor quiz={quiz} />
+        ) : (
+          <ContentTab quiz={quiz} />
+        ))}
       {tab === 'diseno' && <DesignTab quiz={quiz} onSave={(theme) => patch.mutate({ theme })} saving={patch.isPending} />}
       {tab === 'ajustes' && (
         <SettingsTab
           quiz={quiz}
           isSurvey={isSurvey}
           isBalloons={isBalloons}
+          isBottle={isBottle}
           onSave={(body) => patch.mutate(body)}
           saving={patch.isPending}
           error={patch.isError ? patch.error.message : ''}
@@ -258,7 +276,7 @@ function DesignTab({ quiz, onSave, saving }) {
 }
 
 /* -------------------------------- Ajustes ------------------------------- */
-function SettingsTab({ quiz, isSurvey, isBalloons, onSave, saving, error }) {
+function SettingsTab({ quiz, isSurvey, isBalloons, isBottle, onSave, saving, error }) {
   const [form, setForm] = useState({
     title: quiz.title,
     description: quiz.description || '',
@@ -288,18 +306,27 @@ function SettingsTab({ quiz, isSurvey, isBalloons, onSave, saving, error }) {
         value={form.description}
         onChange={(e) => setForm({ ...form, description: e.target.value })}
       />
-      <Input
-        label="Slug del link público"
-        value={form.slug}
-        onChange={(e) => setForm({ ...form, slug: e.target.value })}
-      />
+      {!isBottle && (
+        <Input
+          label="Slug del link público"
+          value={form.slug}
+          onChange={(e) => setForm({ ...form, slug: e.target.value })}
+        />
+      )}
       <ImageInput
         label="Imagen de portada"
         value={form.coverImage}
         onChange={(v) => setForm({ ...form, coverImage: v })}
       />
 
-      {isBalloons ? (
+      {isBottle ? (
+        <Textarea
+          label="Mensaje al terminar la ruleta"
+          rows={2}
+          value={s.closingMessage || ''}
+          onChange={(e) => setS('closingMessage', e.target.value)}
+        />
+      ) : isBalloons ? (
         <>
           <div className="rounded-lg border border-slate-200 p-3">
             <p className="mb-2 text-sm font-semibold text-slate-800">Participación</p>

@@ -51,6 +51,11 @@ export const DEFAULT_BALLOONS_SETTINGS = {
   closingMessage: '¡Reventaste todos los globos! Gracias por participar.',
 };
 
+// Ajustes propios del tipo "Botella" (ruleta de preguntas para presentar).
+export const DEFAULT_BOTTLE_SETTINGS = {
+  closingMessage: '¡Repasamos todas las preguntas!',
+};
+
 export const THEME_PRESETS = {
   clasico: DEFAULT_THEME,
   claro: {
@@ -92,6 +97,12 @@ export function mergeTheme(partial) {
 
 export function mergeSettings(partial, type = 'QUIZ') {
   const base =
-    type === 'SURVEY' ? DEFAULT_SURVEY_SETTINGS : type === 'BALLOONS' ? DEFAULT_BALLOONS_SETTINGS : DEFAULT_SETTINGS;
+    type === 'SURVEY'
+      ? DEFAULT_SURVEY_SETTINGS
+      : type === 'BALLOONS'
+        ? DEFAULT_BALLOONS_SETTINGS
+        : type === 'BOTTLE'
+          ? DEFAULT_BOTTLE_SETTINGS
+          : DEFAULT_SETTINGS;
   return { ...base, ...(partial || {}) };
 }

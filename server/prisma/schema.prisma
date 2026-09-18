@@ -21,6 +21,7 @@ enum GameType {
   QUIZ
   SURVEY
   BALLOONS
+  BOTTLE
 }
 
 enum QuestionType {
@@ -106,6 +107,7 @@ model Question {
   allowOther Boolean        @default(false)
   balloonColor String?
   balloonSpeed String?      // 'SLOW' | 'MEDIUM' | 'FAST' (solo tipo BALLOONS)
+  answerText String?        // respuesta modelo a revelar (solo tipo BOTTLE)
   options    AnswerOption[]
 
   @@index([quizId])

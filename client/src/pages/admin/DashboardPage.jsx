@@ -7,7 +7,8 @@ import { Button, Card, Input, Select, Spinner, ConfirmButton } from '../../compo
 const publicPath = (quiz) =>
   quiz.type === 'SURVEY' ? `/s/${quiz.slug}` : quiz.type === 'BALLOONS' ? `/globos/${quiz.slug}` : `/play/${quiz.slug}`;
 const publicUrl = (quiz) => `${window.location.origin}${publicPath(quiz)}`;
-const typeLabel = (type) => (type === 'SURVEY' ? 'Sondeo' : type === 'BALLOONS' ? 'Globos' : 'Quiz');
+const typeLabel = (type) =>
+  type === 'SURVEY' ? 'Sondeo' : type === 'BALLOONS' ? 'Globos' : type === 'BOTTLE' ? 'Botella' : 'Quiz';
 const unitLabel = (type) => (type === 'SURVEY' ? 'pantalla(s)' : type === 'BALLOONS' ? 'globo(s)' : 'pregunta(s)');
 
 export default function DashboardPage() {
@@ -79,6 +80,7 @@ export default function DashboardPage() {
             <option value="QUIZ">Quiz (preguntas con puntaje)</option>
             <option value="SURVEY">Sondeo (consulta, sin puntaje)</option>
             <option value="BALLOONS">Globos (reventar y responder)</option>
+            <option value="BOTTLE">Botella (ruleta para presentar)</option>
           </Select>
           <Button onClick={() => create.mutate()} disabled={create.isPending}>
             {create.isPending ? 'Creando…' : 'Crear'}
@@ -89,7 +91,9 @@ export default function DashboardPage() {
             ? 'Sondeo: pantallas simples para tocar opciones. Ideal para reflexión o lluvia de ideas guiada.'
             : type === 'BALLOONS'
               ? 'Globos: suben globos de colores, al reventarlos aparece una pregunta. Sin tiempo ni puntaje.'
-              : 'Quiz: preguntas de opción con temporizador y puntaje.'}
+              : type === 'BOTTLE'
+                ? 'Botella: ruleta de preguntas abiertas para que el profesor presente y revele la respuesta. Sin link público.'
+                : 'Quiz: preguntas de opción con temporizador y puntaje.'}
         </p>
         {create.isError && <p className="mt-2 text-sm text-red-600">{create.error.message}</p>}
       </Card>
@@ -115,7 +119,7 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-500">
               {quiz._count.questions} {unitLabel(quiz.type)} · {quiz._count.sessions} respuesta(s)
             </p>
-            {quiz.status === 'PUBLISHED' && (
+            {quiz.status === 'PUBLISHED' && quiz.type !== 'BOTTLE' && (
               <button
                 onClick={() => copy(quiz)}
                 className="truncate rounded bg-slate-100 px-2 py-1 text-left text-xs text-slate-600 hover:bg-slate-200"
@@ -128,9 +132,16 @@ export default function DashboardPage() {
               <Link to={`/admin/quizzes/${quiz.id}`}>
                 <Button variant="secondary">Editar</Button>
               </Link>
-              <Link to={`/admin/quizzes/${quiz.id}/resultados`}>
-                <Button variant="ghost">Resultados</Button>
-              </Link>
+              {quiz.type === 'BOTTLE' && quiz.status === 'PUBLISHED' && (
+                <Link to={`/admin/quizzes/${quiz.id}/ruleta`}>
+                  <Button>Presentar ▶</Button>
+                </Link>
+              )}
+              {quiz.type !== 'BOTTLE' && (
+                <Link to={`/admin/quizzes/${quiz.id}/resultados`}>
+                  <Button variant="ghost">Resultados</Button>
+                </Link>
+              )}
               <Button variant="ghost" onClick={() => duplicate.mutate(quiz.id)}>
                 Duplicar
               </Button>

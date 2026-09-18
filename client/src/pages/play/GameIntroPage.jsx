@@ -23,6 +23,8 @@ export default function GameIntroPage() {
   // Los sondeos y los globos tienen su propia pantalla.
   if (data.quiz.type === 'SURVEY') return <Navigate to={`/s/${slug}`} replace />;
   if (data.quiz.type === 'BALLOONS') return <Navigate to={`/globos/${slug}`} replace />;
+  // Botella no tiene link público: solo la presenta el profesor desde el panel.
+  if (data.quiz.type === 'BOTTLE') return <CenteredMsg>Este juego no está disponible.</CenteredMsg>;
 
   const quiz = data.quiz;
   const helper = themeToStyle(quiz.theme);
