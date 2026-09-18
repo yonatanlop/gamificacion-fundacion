@@ -93,6 +93,16 @@ body {
   transform: translateX(-50%);
 }
 
+@keyframes string-sway {
+  0%,
+  100% {
+    rotate: -9deg;
+  }
+  50% {
+    rotate: 9deg;
+  }
+}
+
 .balloon::after {
   content: '';
   position: absolute;
@@ -101,6 +111,8 @@ body {
   width: 1.5px;
   height: 42px;
   background: rgba(255, 255, 255, 0.55);
-  transform: translateX(-50%) rotate(-4deg);
+  translate: -50% 0;
   transform-origin: top center;
+  animation: string-sway ease-in-out infinite;
+  animation-duration: calc(var(--rise-duration, 7s) / 2.4);
 }
