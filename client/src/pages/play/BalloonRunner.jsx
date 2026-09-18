@@ -168,9 +168,8 @@ export default function BalloonRunner() {
                       className="balloon"
                       style={{
                         left: `${l.left}%`,
-                        backgroundColor: q.balloonColor || '#ef4444',
-                        color: q.balloonColor || '#ef4444',
-                        animationDuration: `${l.duration}s`,
+                        '--balloon-color': q.balloonColor || '#ef4444',
+                        '--rise-duration': `${l.duration}s`,
                         animationDelay: `${l.delay}s`,
                       }}
                     />

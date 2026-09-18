@@ -23,48 +23,73 @@ body {
   font-family: var(--font-family, 'Poppins'), 'Nunito', system-ui, sans-serif;
 }
 
-/* Globo animado del juego "Globos": sube desde abajo y, al llegar arriba sin
-   reventar, el loop infinito lo reinicia solo desde abajo (sin JS). */
+/* Globo animado del juego "Globos": sube desde abajo con un leve balanceo
+   lateral y, al llegar arriba sin reventar, el loop infinito lo reinicia
+   solo desde abajo (sin JS). El volumen 3D es puro CSS: dos gradientes
+   radiales (brillo arriba-izquierda + sombra abajo-derecha) sobre el color
+   propio del globo, sin imágenes ni librerías. */
 @keyframes balloon-rise {
-  from {
-    transform: translateY(0) rotate(-3deg);
+  0% {
+    transform: translate(0, 0) rotate(-5deg);
+  }
+  25% {
+    transform: translate(6%, -29.5vh) rotate(4deg);
   }
   50% {
-    transform: translateY(-58vh) rotate(3deg);
+    transform: translate(-7%, -59vh) rotate(-5deg);
   }
-  to {
-    transform: translateY(-118vh) rotate(-3deg);
+  75% {
+    transform: translate(6%, -88.5vh) rotate(4deg);
+  }
+  100% {
+    transform: translate(0, -118vh) rotate(-5deg);
+  }
+}
+
+@keyframes balloon-wobble {
+  0%,
+  100% {
+    border-radius: 52% 48% 50% 50% / 60% 62% 38% 40%;
+  }
+  50% {
+    border-radius: 48% 52% 50% 50% / 58% 60% 40% 42%;
   }
 }
 
 .balloon {
+  --balloon-color: #ef4444;
   position: absolute;
   bottom: -18vh;
-  width: 68px;
-  height: 84px;
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  width: 74px;
+  height: 92px;
   cursor: pointer;
-  animation-name: balloon-rise;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  box-shadow: inset -8px -10px 16px rgba(0, 0, 0, 0.18), 0 6px 14px rgba(0, 0, 0, 0.25);
-  transition: transform 0.15s ease;
+  color: var(--balloon-color);
+  background:
+    radial-gradient(ellipse 60% 45% at 30% 24%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.32) 22%, rgba(255, 255, 255, 0) 55%),
+    radial-gradient(ellipse 55% 60% at 74% 84%, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 60%),
+    var(--balloon-color);
+  box-shadow: inset -3px -4px 10px rgba(0, 0, 0, 0.2), inset 3px 4px 8px rgba(255, 255, 255, 0.35),
+    0 10px 18px rgba(0, 0, 0, 0.3);
+  animation: balloon-rise linear infinite, balloon-wobble ease-in-out infinite;
+  animation-duration: var(--rise-duration, 7s), calc(var(--rise-duration, 7s) / 3);
+  transition: filter 0.15s ease;
 }
 
 .balloon:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.1);
 }
 
 .balloon::before {
   content: '';
   position: absolute;
   left: 50%;
-  bottom: -8px;
+  bottom: -9px;
   width: 0;
   height: 0;
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
-  border-top: 8px solid currentColor;
+  border-top: 9px solid currentColor;
+  filter: brightness(0.82);
   transform: translateX(-50%);
 }
 
@@ -72,9 +97,10 @@ body {
   content: '';
   position: absolute;
   left: 50%;
-  bottom: -46px;
-  width: 2px;
-  height: 40px;
+  bottom: -48px;
+  width: 1.5px;
+  height: 42px;
   background: rgba(255, 255, 255, 0.55);
-  transform: translateX(-50%);
+  transform: translateX(-50%) rotate(-4deg);
+  transform-origin: top center;
 }
