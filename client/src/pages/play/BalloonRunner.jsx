@@ -117,10 +117,12 @@ export default function BalloonRunner() {
   }
 
   const remaining = session ? session.quiz.questions.filter((q) => !answeredIds.has(q.id)) : [];
+  const skyStyle = { ...helper.style, background: undefined, color: '#0f3157' };
 
   return (
-    <div className="game-theme min-h-screen" style={helper.style}>
-      <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col px-4 py-6">
+    <div className="game-theme balloon-sky relative min-h-screen overflow-hidden" style={skyStyle}>
+      <CloudLayer />
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-2xl flex-col px-4 py-6">
         {phase === 'intro' && (
           <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
             {data.quiz.theme?.logo && <img src={data.quiz.theme.logo} alt="" className="max-h-16 object-contain" />}
@@ -142,7 +144,7 @@ export default function BalloonRunner() {
                 className="w-full rounded-xl border-0 px-4 py-4 text-center text-xl text-slate-900 shadow-lg outline-none"
               />
             )}
-            {error && <p className="text-base font-semibold text-red-100">{error}</p>}
+            {error && <p className="text-base font-semibold text-red-700">{error}</p>}
             <BigButton onClick={start} disabled={busy}>
               {busy ? 'Preparando…' : 'Empezar'}
             </BigButton>
@@ -154,7 +156,7 @@ export default function BalloonRunner() {
             <p className="mb-2 text-center text-base font-bold opacity-90">
               Globos por reventar: {remaining.length} / {session.quiz.questions.length}
             </p>
-            <div className="relative flex-1 overflow-hidden rounded-2xl bg-black/10">
+            <div className="relative flex-1 overflow-hidden rounded-2xl">
               {layout
                 .filter((l) => !answeredIds.has(l.id))
                 .map((l) => {
@@ -230,6 +232,35 @@ export default function BalloonRunner() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+const CLOUDS = [
+  { top: '6%', left: '8%', width: 180, duration: 46 },
+  { top: '16%', left: '62%', width: 120, duration: 38 },
+  { top: '32%', left: '28%', width: 220, duration: 55 },
+  { top: '48%', left: '78%', width: 95, duration: 34 },
+  { top: '62%', left: '4%', width: 150, duration: 50 },
+  { top: '78%', left: '52%', width: 110, duration: 42 },
+];
+
+function CloudLayer() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0">
+      {CLOUDS.map((c, i) => (
+        <div
+          key={i}
+          className="cloud"
+          style={{
+            top: c.top,
+            left: c.left,
+            width: `${c.width}px`,
+            animationDuration: `${c.duration}s`,
+            animationDelay: `${-i * 7}s`,
+          }}
+        />
+      ))}
     </div>
   );
 }

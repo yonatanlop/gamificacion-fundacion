@@ -116,3 +116,51 @@ body {
   animation: string-sway ease-in-out infinite;
   animation-duration: calc(var(--rise-duration, 7s) / 2.4);
 }
+
+/* Fondo de cielo del juego "Globos": degradado azul cielo + nubes de puro CSS
+   (un óvalo base + dos círculos superpuestos, todo en % del ancho propio de
+   cada nube — sin imágenes) con una deriva lateral lenta e independiente. */
+.balloon-sky {
+  background: linear-gradient(180deg, #3b93f0 0%, #6fb8f7 40%, #bfe3fb 78%, #e4f4fd 100%);
+}
+
+@keyframes cloud-drift {
+  from {
+    translate: -6% 0;
+  }
+  to {
+    translate: 6% 0;
+  }
+}
+
+.cloud {
+  position: absolute;
+  width: 160px;
+  aspect-ratio: 2.4 / 1;
+  background: #fff;
+  border-radius: 50%;
+  filter: drop-shadow(0 8px 10px rgba(30, 64, 120, 0.12));
+  animation: cloud-drift ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.cloud::before,
+.cloud::after {
+  content: '';
+  position: absolute;
+  aspect-ratio: 1;
+  background: #fff;
+  border-radius: 50%;
+}
+
+.cloud::before {
+  width: 58%;
+  top: -52%;
+  left: 6%;
+}
+
+.cloud::after {
+  width: 44%;
+  top: -36%;
+  right: 12%;
+}
