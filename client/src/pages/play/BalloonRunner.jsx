@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.js';
 import { themeToStyle } from '../../lib/theme.js';
-import { playPop, playWin } from '../../lib/sound.js';
+import { playStart, playPopSound, playCorrect, playIncorrect, playWinSound } from '../../lib/sound.js';
 import AnswerGrid from '../../components/AnswerGrid.jsx';
 
 const SPEED_SECONDS = { SLOW: 12, MEDIUM: 7, FAST: 4 };
@@ -47,7 +47,7 @@ export default function BalloonRunner() {
       const duration = SPEED_SECONDS[q.balloonSpeed] || SPEED_SECONDS.MEDIUM;
       return {
         id: q.id,
-        left: Math.min(94, Math.max(2, laneWidth * i + laneWidth / 2 + jitter)),
+        left: Math.min(90, Math.max(10, laneWidth * i + laneWidth / 2 + jitter)),
         duration,
         delay: -seededRandom(`${q.id}:d`) * duration,
       };
@@ -73,6 +73,7 @@ export default function BalloonRunner() {
       setAnsweredIds(new Set());
       setMistakes(0);
       setPhase('play');
+      playStart(res.quiz.settings?.sounds?.start);
     } catch (err) {
       setError(err.message || 'No se pudo empezar');
     } finally {
@@ -84,7 +85,7 @@ export default function BalloonRunner() {
     if (active || burst) return;
     const rect = e.currentTarget.getBoundingClientRect();
     setBurst({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, color: q.balloonColor || '#ef4444' });
-    playPop();
+    playPopSound(quiz.settings?.sounds?.pop);
     setTimeout(() => setBurst(null), 500);
     setTimeout(() => setActive(q), 180);
   }
@@ -99,7 +100,12 @@ export default function BalloonRunner() {
         selectedOptionIds: [optionId],
         timeMs: 0,
       });
-      if (!res.isCorrect) setMistakes((m) => m + 1);
+      if (res.isCorrect) {
+        playCorrect(quiz.settings?.sounds?.correct);
+      } else {
+        setMistakes((m) => m + 1);
+        playIncorrect(quiz.settings?.sounds?.incorrect);
+      }
       setFeedback({ isCorrect: res.isCorrect, correctOptionIds: res.correctOptionIds || [] });
     } catch (err) {
       setError(err.message || 'No se pudo enviar la respuesta');
@@ -124,7 +130,7 @@ export default function BalloonRunner() {
       try {
         await api.post(`/play/sessions/${session.sessionId}/finish`);
         setPhase('done');
-        playWin();
+        playWinSound(quiz.settings?.sounds?.win);
       } catch (err) {
         setError(err.message || 'No se pudo cerrar el juego');
       } finally {
@@ -139,7 +145,11 @@ export default function BalloonRunner() {
   return (
     <div className="game-theme balloon-sky relative min-h-screen overflow-hidden" style={skyStyle}>
       <CloudLayer />
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-2xl flex-col px-4 py-6">
+      <div
+        className={`relative z-10 mx-auto flex min-h-screen w-full flex-col px-4 py-6 ${
+          phase === 'play' ? 'max-w-6xl' : 'max-w-2xl'
+        }`}
+      >
         {phase === 'intro' && (
           <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
             {data.quiz.theme?.logo && <img src={data.quiz.theme.logo} alt="" className="max-h-16 object-contain" />}
@@ -187,6 +197,7 @@ export default function BalloonRunner() {
                       className="balloon"
                       style={{
                         left: `${l.left}%`,
+                        translate: '-50% 0',
                         '--balloon-color': q.balloonColor || '#ef4444',
                         '--rise-duration': `${l.duration}s`,
                         animationDelay: `${l.delay}s`,
@@ -201,6 +212,7 @@ export default function BalloonRunner() {
         {phase === 'done' && (
           <div className="relative flex flex-1 flex-col items-center justify-center gap-4 text-center">
             <ConfettiLayer />
+            <WinFireworks />
             <div className="text-6xl">🎉</div>
             <h2 className="font-extrabold" style={{ fontSize: 'calc(2rem * var(--heading-scale,1))' }}>
               ¡Ganaste!
@@ -305,8 +317,27 @@ function Burst({ x, y, color }) {
   );
 }
 
+function WinFireworks() {
+  const [bursts, setBursts] = useState([]);
+
+  useEffect(() => {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const points = [
+      { x: w * 0.22, y: h * 0.3, color: '#ef4444' },
+      { x: w * 0.78, y: h * 0.25, color: '#2563eb' },
+      { x: w * 0.5, y: h * 0.45, color: '#f59e0b' },
+      { x: w * 0.35, y: h * 0.6, color: '#a855f7' },
+    ];
+    const timers = points.map((p, i) => setTimeout(() => setBursts((b) => [...b, { ...p, id: i }]), i * 380));
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  return bursts.map((b) => <Burst key={b.id} x={b.x} y={b.y} color={b.color} />);
+}
+
 const CONFETTI_COLORS = ['#ef4444', '#f59e0b', '#22c55e', '#2563eb', '#a855f7', '#ec4899'];
-const CONFETTI_PIECES = Array.from({ length: 26 }, (_, i) => ({
+const CONFETTI_PIECES = Array.from({ length: 50 }, (_, i) => ({
   left: seededRandom(`confetti:${i}:l`) * 100,
   color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
   duration: 2.4 + seededRandom(`confetti:${i}:d`) * 2,

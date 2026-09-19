@@ -15,6 +15,10 @@ const ALLOWED = {
   'image/webp': '.webp',
   'image/gif': '.gif',
   'image/svg+xml': '.svg',
+  'audio/mpeg': '.mp3',
+  'audio/wav': '.wav',
+  'audio/x-wav': '.wav',
+  'audio/ogg': '.ogg',
 };
 
 fs.mkdirSync(config.uploadDir, { recursive: true });
@@ -29,7 +33,7 @@ const upload = multer({
   limits: { fileSize: config.maxUploadBytes, files: 1 },
   fileFilter: (req, file, cb) => {
     if (!ALLOWED[file.mimetype]) {
-      return cb(new HttpError(415, 'Formato no permitido (usa PNG, JPG, WEBP, GIF o SVG)'));
+      return cb(new HttpError(415, 'Formato no permitido (usa PNG, JPG, WEBP, GIF, SVG, MP3, WAV u OGG)'));
     }
     return cb(null, true);
   },

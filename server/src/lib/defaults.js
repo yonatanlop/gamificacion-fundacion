@@ -44,11 +44,22 @@ export const DEFAULT_SURVEY_SETTINGS = {
   closingMessage: '¡Listo! Tu respuesta quedó registrada. Muchas gracias.',
 };
 
+// Sonidos por defecto de "Globos": presets generados por código, sin archivo
+// propio. El profesor puede cambiar el preset o subir un audio en Ajustes.
+export const DEFAULT_BALLOON_SOUNDS = {
+  start: { enabled: true, preset: 'chime', url: null },
+  pop: { enabled: true, preset: 'classic', url: null },
+  correct: { enabled: true, preset: 'applause', url: null },
+  incorrect: { enabled: true, preset: 'buzz', url: null },
+  win: { enabled: true, preset: 'fanfare', url: null },
+};
+
 // Ajustes propios del tipo "Globos".
 export const DEFAULT_BALLOONS_SETTINGS = {
   askNickname: true,
   nicknameLabel: 'Tu nombre',
   closingMessage: '¡Reventaste todos los globos! Gracias por participar.',
+  sounds: DEFAULT_BALLOON_SOUNDS,
 };
 
 // Ajustes propios del tipo "Botella" (ruleta de preguntas para presentar).

@@ -11,6 +11,8 @@ import SurveyEditor from '../../components/SurveyEditor.jsx';
 import BalloonsEditor from '../../components/BalloonsEditor.jsx';
 import BottleEditor from '../../components/BottleEditor.jsx';
 import ShareBox from '../../components/ShareBox.jsx';
+import SoundField from '../../components/SoundField.jsx';
+import { DEFAULT_SOUNDS } from '../../lib/sound.js';
 
 export default function QuizEditorPage() {
   const { id } = useParams();
@@ -296,6 +298,8 @@ function SettingsTab({ quiz, isSurvey, isBalloons, isBottle, onSave, saving, err
 
   const s = form.settings;
   const setS = (key, v) => setForm({ ...form, settings: { ...s, [key]: v } });
+  const sounds = { ...DEFAULT_SOUNDS, ...(s.sounds || {}) };
+  const setSound = (key, cfg) => setS('sounds', { ...sounds, [key]: cfg });
 
   return (
     <Card className="max-w-2xl space-y-4">
@@ -347,6 +351,18 @@ function SettingsTab({ quiz, isSurvey, isBalloons, isBottle, onSave, saving, err
             value={s.closingMessage || ''}
             onChange={(e) => setS('closingMessage', e.target.value)}
           />
+
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-slate-800">Sonidos</p>
+            <p className="text-xs text-slate-500">
+              Elige un preset generado por la app, o sube tu propio audio para reemplazarlo en ese evento.
+            </p>
+            <SoundField label="Al empezar" eventKey="start" value={sounds.start} onChange={(v) => setSound('start', v)} />
+            <SoundField label="Al reventar un globo" eventKey="pop" value={sounds.pop} onChange={(v) => setSound('pop', v)} />
+            <SoundField label="Respuesta correcta" eventKey="correct" value={sounds.correct} onChange={(v) => setSound('correct', v)} />
+            <SoundField label="Respuesta incorrecta" eventKey="incorrect" value={sounds.incorrect} onChange={(v) => setSound('incorrect', v)} />
+            <SoundField label="Al ganar" eventKey="win" value={sounds.win} onChange={(v) => setSound('win', v)} />
+          </div>
         </>
       ) : isSurvey ? (
         <>
