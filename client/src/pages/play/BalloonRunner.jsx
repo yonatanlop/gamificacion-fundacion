@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.js';
 import { themeToStyle } from '../../lib/theme.js';
+import { isWebglAvailable } from '../../lib/webgl.js';
 import { playStart, playPopSound, playCorrect, playIncorrect, playWinSound } from '../../lib/sound.js';
 import AnswerGrid from '../../components/AnswerGrid.jsx';
+
+const BalloonScene3D = lazy(() => import('../../components/balloons3d/BalloonScene3D.jsx'));
 
 const SPEED_SECONDS = { SLOW: 12, MEDIUM: 7, FAST: 4 };
 
@@ -37,6 +40,7 @@ export default function BalloonRunner() {
 
   const quiz = session?.quiz || data?.quiz;
   const helper = useMemo(() => (quiz ? themeToStyle(quiz.theme) : null), [quiz]);
+  const webglOk = useMemo(() => isWebglAvailable(), []);
 
   const layout = useMemo(() => {
     if (!session) return [];
@@ -81,10 +85,9 @@ export default function BalloonRunner() {
     }
   }
 
-  function popBalloon(e, q) {
+  function popBalloon(q, clientX, clientY) {
     if (active || burst) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    setBurst({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, color: q.balloonColor || '#ef4444' });
+    setBurst({ x: clientX, y: clientY, color: q.balloonColor || '#ef4444' });
     playPopSound(quiz.settings?.sounds?.pop);
     setTimeout(() => setBurst(null), 500);
     setTimeout(() => setActive(q), 180);
@@ -144,7 +147,6 @@ export default function BalloonRunner() {
 
   return (
     <div className="game-theme balloon-sky relative min-h-screen overflow-hidden" style={skyStyle}>
-      <CloudLayer />
       <div
         className={`relative z-10 mx-auto flex min-h-screen w-full flex-col px-4 py-6 ${
           phase === 'play' ? 'max-w-6xl' : 'max-w-2xl'
@@ -184,27 +186,23 @@ export default function BalloonRunner() {
               Globos por reventar: {remaining.length} / {session.quiz.questions.length}
             </p>
             <div className="relative flex-1 overflow-hidden rounded-2xl">
-              {layout
-                .filter((l) => !answeredIds.has(l.id))
-                .map((l) => {
-                  const q = session.quiz.questions.find((x) => x.id === l.id);
-                  return (
-                    <button
-                      key={l.id}
-                      type="button"
-                      aria-label={`Reventar globo: ${q.text}`}
-                      onClick={(e) => popBalloon(e, q)}
-                      className="balloon"
-                      style={{
-                        left: `${l.left}%`,
-                        translate: '-50% 0',
-                        '--balloon-color': q.balloonColor || '#ef4444',
-                        '--rise-duration': `${l.duration}s`,
-                        animationDelay: `${l.delay}s`,
-                      }}
+              {webglOk ? (
+                <Suspense fallback={<div className="absolute inset-0" />}>
+                  <div className="absolute inset-0">
+                    <BalloonScene3D
+                      balloons={layout
+                        .filter((l) => !answeredIds.has(l.id))
+                        .map((l) => ({ layout: l, question: session.quiz.questions.find((x) => x.id === l.id) }))}
+                      onPop={popBalloon}
                     />
-                  );
-                })}
+                  </div>
+                </Suspense>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-lg font-semibold text-white">
+                  Tu navegador no soporta gráficos 3D. Por favor abre el juego desde otro navegador o dispositivo
+                  actualizado.
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -264,35 +262,6 @@ export default function BalloonRunner() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-const CLOUDS = [
-  { top: '6%', left: '8%', width: 180, duration: 46 },
-  { top: '16%', left: '62%', width: 120, duration: 38 },
-  { top: '32%', left: '28%', width: 220, duration: 55 },
-  { top: '48%', left: '78%', width: 95, duration: 34 },
-  { top: '62%', left: '4%', width: 150, duration: 50 },
-  { top: '78%', left: '52%', width: 110, duration: 42 },
-];
-
-function CloudLayer() {
-  return (
-    <div className="pointer-events-none absolute inset-0 z-0">
-      {CLOUDS.map((c, i) => (
-        <div
-          key={i}
-          className="cloud"
-          style={{
-            top: c.top,
-            left: c.left,
-            width: `${c.width}px`,
-            animationDuration: `${c.duration}s`,
-            animationDelay: `${-i * 7}s`,
-          }}
-        />
-      ))}
     </div>
   );
 }
