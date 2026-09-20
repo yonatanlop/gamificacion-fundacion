@@ -22,6 +22,7 @@ enum GameType {
   SURVEY
   BALLOONS
   BOTTLE
+  PIPES
 }
 
 enum QuestionType {

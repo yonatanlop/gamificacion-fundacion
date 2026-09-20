@@ -71,6 +71,7 @@ router.post(
     const { session, player, quiz } = await loadSession(req.params.sessionId);
     const isSurvey = quiz.type === 'SURVEY';
     const isBalloons = quiz.type === 'BALLOONS';
+    const isPipes = quiz.type === 'PIPES';
 
     const question = await prisma.question.findFirst({
       where: { id: questionId, quizId: session.quizId },
@@ -110,9 +111,9 @@ router.post(
       throw new HttpError(409, 'Esta pregunta ya fue respondida');
     }
 
-    // Globos: un intento fallido no se guarda ni cuenta como respondida — el
-    // globo sigue disponible para volver a intentarlo hasta acertar.
-    if (isBalloons && !isCorrect) {
+    // Globos/Tuberías: un intento fallido no se guarda ni cuenta como
+    // respondida — se puede volver a intentar hasta acertar.
+    if ((isBalloons || isPipes) && !isCorrect) {
       return res.json({ isCorrect: false, pointsAwarded: 0, correctOptionIds });
     }
 

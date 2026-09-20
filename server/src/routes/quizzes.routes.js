@@ -10,6 +10,7 @@ import {
   surveyScreenData,
   balloonQuestionData,
   bottleQuestionData,
+  pipesQuestionData,
   buildQuizCopyData,
 } from '../services/quizPayload.js';
 import {
@@ -19,6 +20,7 @@ import {
   surveyScreenSchema,
   balloonQuestionSchema,
   bottleQuestionSchema,
+  pipesQuestionSchema,
   reorderSchema,
   shareCreateSchema,
 } from '../validators/schemas.js';
@@ -124,7 +126,9 @@ router.post(
             ? 'No se puede publicar un juego de globos sin globos'
             : quiz.type === 'BOTTLE'
               ? 'No se puede publicar una botella sin preguntas'
-              : 'No se puede publicar un quiz sin preguntas',
+              : quiz.type === 'PIPES'
+                ? 'No se puede publicar un juego de tuberías sin preguntas'
+                : 'No se puede publicar un quiz sin preguntas',
       );
     }
     const updated = await prisma.quiz.update({
@@ -193,7 +197,9 @@ router.post(
           ? balloonQuestionData(balloonQuestionSchema.parse(req.body), quiz.questions.length)
           : quiz.type === 'BOTTLE'
             ? bottleQuestionData(bottleQuestionSchema.parse(req.body), quiz.questions.length)
-            : questionCreateData(questionSchema.parse(req.body), quiz.questions.length);
+            : quiz.type === 'PIPES'
+              ? pipesQuestionData(pipesQuestionSchema.parse(req.body), quiz.questions.length)
+              : questionCreateData(questionSchema.parse(req.body), quiz.questions.length);
     const question = await prisma.question.create({
       data: { quizId: quiz.id, ...data },
       include: { options: { orderBy: { order: 'asc' } } },

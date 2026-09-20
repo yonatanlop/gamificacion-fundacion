@@ -20,9 +20,10 @@ export default function GameIntroPage() {
   if (isLoading) return <CenteredMsg>Cargando juego…</CenteredMsg>;
   if (isError) return <CenteredMsg>Este juego no está disponible.</CenteredMsg>;
 
-  // Los sondeos y los globos tienen su propia pantalla.
+  // Los sondeos, los globos y las tuberías tienen su propia pantalla.
   if (data.quiz.type === 'SURVEY') return <Navigate to={`/s/${slug}`} replace />;
   if (data.quiz.type === 'BALLOONS') return <Navigate to={`/globos/${slug}`} replace />;
+  if (data.quiz.type === 'PIPES') return <Navigate to={`/tuberias/${slug}`} replace />;
   // Botella no tiene link público: solo la presenta el profesor desde el panel.
   if (data.quiz.type === 'BOTTLE') return <CenteredMsg>Este juego no está disponible.</CenteredMsg>;
 

@@ -5,10 +5,24 @@ import { api } from '../../api/client.js';
 import { Button, Card, Input, Select, Spinner, ConfirmButton } from '../../components/ui.jsx';
 
 const publicPath = (quiz) =>
-  quiz.type === 'SURVEY' ? `/s/${quiz.slug}` : quiz.type === 'BALLOONS' ? `/globos/${quiz.slug}` : `/play/${quiz.slug}`;
+  quiz.type === 'SURVEY'
+    ? `/s/${quiz.slug}`
+    : quiz.type === 'BALLOONS'
+      ? `/globos/${quiz.slug}`
+      : quiz.type === 'PIPES'
+        ? `/tuberias/${quiz.slug}`
+        : `/play/${quiz.slug}`;
 const publicUrl = (quiz) => `${window.location.origin}${publicPath(quiz)}`;
 const typeLabel = (type) =>
-  type === 'SURVEY' ? 'Sondeo' : type === 'BALLOONS' ? 'Globos' : type === 'BOTTLE' ? 'Botella' : 'Quiz';
+  type === 'SURVEY'
+    ? 'Sondeo'
+    : type === 'BALLOONS'
+      ? 'Globos'
+      : type === 'BOTTLE'
+        ? 'Botella'
+        : type === 'PIPES'
+          ? 'Tuberías'
+          : 'Quiz';
 const unitLabel = (type) => (type === 'SURVEY' ? 'pantalla(s)' : type === 'BALLOONS' ? 'globo(s)' : 'pregunta(s)');
 
 export default function DashboardPage() {
@@ -81,6 +95,7 @@ export default function DashboardPage() {
             <option value="SURVEY">Sondeo (consulta, sin puntaje)</option>
             <option value="BALLOONS">Globos (reventar y responder)</option>
             <option value="BOTTLE">Botella (ruleta para presentar)</option>
+            <option value="PIPES">Tuberías (elegir el tubo correcto)</option>
           </Select>
           <Button onClick={() => create.mutate()} disabled={create.isPending}>
             {create.isPending ? 'Creando…' : 'Crear'}
@@ -93,7 +108,9 @@ export default function DashboardPage() {
               ? 'Globos: suben globos de colores, al reventarlos aparece una pregunta. Sin tiempo ni puntaje.'
               : type === 'BOTTLE'
                 ? 'Botella: ruleta de preguntas abiertas para que el profesor presente y revele la respuesta. Sin link público.'
-                : 'Quiz: preguntas de opción con temporizador y puntaje.'}
+                : type === 'PIPES'
+                  ? 'Tuberías: quiz narrativo en 3D, cada pregunta se responde eligiendo un tubo. Puede incluir mensajes narrativos y un límite de tiempo a partir de cierta pregunta.'
+                  : 'Quiz: preguntas de opción con temporizador y puntaje.'}
         </p>
         {create.isError && <p className="mt-2 text-sm text-red-600">{create.error.message}</p>}
       </Card>

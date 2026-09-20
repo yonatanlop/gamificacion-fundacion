@@ -10,6 +10,8 @@ import QuestionForm from '../../components/QuestionForm.jsx';
 import SurveyEditor from '../../components/SurveyEditor.jsx';
 import BalloonsEditor from '../../components/BalloonsEditor.jsx';
 import BottleEditor from '../../components/BottleEditor.jsx';
+import PipesEditor from '../../components/PipesEditor.jsx';
+import StoryBeatsField from '../../components/StoryBeatsField.jsx';
 import ShareBox from '../../components/ShareBox.jsx';
 import SoundField from '../../components/SoundField.jsx';
 import { DEFAULT_SOUNDS } from '../../lib/sound.js';
@@ -44,10 +46,17 @@ export default function QuizEditorPage() {
   const isSurvey = quiz.type === 'SURVEY';
   const isBalloons = quiz.type === 'BALLOONS';
   const isBottle = quiz.type === 'BOTTLE';
-  const publicPath = isSurvey ? `/s/${quiz.slug}` : isBalloons ? `/globos/${quiz.slug}` : `/play/${quiz.slug}`;
+  const isPipes = quiz.type === 'PIPES';
+  const publicPath = isSurvey
+    ? `/s/${quiz.slug}`
+    : isBalloons
+      ? `/globos/${quiz.slug}`
+      : isPipes
+        ? `/tuberias/${quiz.slug}`
+        : `/play/${quiz.slug}`;
   const playLink = `${window.location.origin}${publicPath}`;
   const TABS = [
-    ['contenido', isSurvey ? 'Pantallas' : isBalloons ? 'Globos' : isBottle ? 'Preguntas' : 'Contenido'],
+    ['contenido', isSurvey ? 'Pantallas' : isBalloons ? 'Globos' : isBottle ? 'Preguntas' : isPipes ? 'Tuberías' : 'Contenido'],
     ['diseno', 'Diseño'],
     ['ajustes', 'Ajustes'],
   ];
@@ -60,7 +69,7 @@ export default function QuizEditorPage() {
         </Link>
         <h1 className="font-display text-xl font-bold">{quiz.title}</h1>
         <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">
-          {isSurvey ? 'Sondeo' : isBalloons ? 'Globos' : isBottle ? 'Botella' : 'Quiz'}
+          {isSurvey ? 'Sondeo' : isBalloons ? 'Globos' : isBottle ? 'Botella' : isPipes ? 'Tuberías' : 'Quiz'}
         </span>
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
@@ -128,6 +137,8 @@ export default function QuizEditorPage() {
           <BalloonsEditor quiz={quiz} />
         ) : isBottle ? (
           <BottleEditor quiz={quiz} />
+        ) : isPipes ? (
+          <PipesEditor quiz={quiz} />
         ) : (
           <ContentTab quiz={quiz} />
         ))}
@@ -138,6 +149,7 @@ export default function QuizEditorPage() {
           isSurvey={isSurvey}
           isBalloons={isBalloons}
           isBottle={isBottle}
+          isPipes={isPipes}
           onSave={(body) => patch.mutate(body)}
           saving={patch.isPending}
           error={patch.isError ? patch.error.message : ''}
@@ -278,7 +290,7 @@ function DesignTab({ quiz, onSave, saving }) {
 }
 
 /* -------------------------------- Ajustes ------------------------------- */
-function SettingsTab({ quiz, isSurvey, isBalloons, isBottle, onSave, saving, error }) {
+function SettingsTab({ quiz, isSurvey, isBalloons, isBottle, isPipes, onSave, saving, error }) {
   const [form, setForm] = useState({
     title: quiz.title,
     description: quiz.description || '',
@@ -362,6 +374,69 @@ function SettingsTab({ quiz, isSurvey, isBalloons, isBottle, onSave, saving, err
             <SoundField label="Respuesta correcta" eventKey="correct" value={sounds.correct} onChange={(v) => setSound('correct', v)} />
             <SoundField label="Respuesta incorrecta" eventKey="incorrect" value={sounds.incorrect} onChange={(v) => setSound('incorrect', v)} />
             <SoundField label="Al ganar" eventKey="win" value={sounds.win} onChange={(v) => setSound('win', v)} />
+          </div>
+        </>
+      ) : isPipes ? (
+        <>
+          <div className="rounded-lg border border-slate-200 p-3">
+            <p className="mb-2 text-sm font-semibold text-slate-800">Participación</p>
+            <Toggle
+              label="Pedir el nombre del participante"
+              checked={s.askNickname !== false}
+              onChange={(v) => setS('askNickname', v)}
+            />
+          </div>
+          <Input
+            label="Etiqueta del campo de nombre"
+            value={s.nicknameLabel || 'Tu nombre'}
+            onChange={(e) => setS('nicknameLabel', e.target.value)}
+          />
+          <Textarea
+            label="Mensaje al terminar"
+            rows={2}
+            value={s.closingMessage || ''}
+            onChange={(e) => setS('closingMessage', e.target.value)}
+          />
+
+          <div className="rounded-lg border border-slate-200 p-3">
+            <p className="mb-2 text-sm font-semibold text-slate-800">Límite de tiempo ("oxígeno")</p>
+            <p className="mb-2 text-xs text-slate-500">
+              A partir de la pregunta indicada, el jugador tendrá un tiempo límite por intento; agotarlo cuenta
+              como una respuesta incorrecta (puede volver a intentar). Deja "Ninguna" para jugar sin límite.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Activar desde la pregunta #</span>
+                <select
+                  value={s.timedFromIndex ?? -1}
+                  onChange={(e) => setS('timedFromIndex', Number(e.target.value))}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                >
+                  <option value={-1}>Ninguna (sin límite de tiempo)</option>
+                  {quiz.questions.map((q, i) => (
+                    <option key={q.id} value={i}>
+                      #{i + 1}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Input
+                label="Duración por intento (s)"
+                type="number"
+                min={5}
+                value={s.oxygenSeconds ?? 20}
+                onChange={(e) => setS('oxygenSeconds', Number(e.target.value))}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 p-3">
+            <p className="mb-2 text-sm font-semibold text-slate-800">Mensajes narrativos entre preguntas</p>
+            <StoryBeatsField
+              value={s.storyBeats || []}
+              onChange={(v) => setS('storyBeats', v)}
+              questionCount={quiz.questions.length}
+            />
           </div>
         </>
       ) : isSurvey ? (

@@ -72,6 +72,16 @@ function publicSettings(settings, type) {
       closingMessage: s.closingMessage || '¡Reventaste todos los globos! Gracias por participar.',
     };
   }
+  if (type === 'PIPES') {
+    return {
+      askNickname: s.askNickname !== false,
+      nicknameLabel: s.nicknameLabel || 'Tu nombre',
+      closingMessage: s.closingMessage || '¡Lo lograste! Gracias por jugar.',
+      timedFromIndex: typeof s.timedFromIndex === 'number' ? s.timedFromIndex : -1,
+      oxygenSeconds: s.oxygenSeconds || 20,
+      storyBeats: Array.isArray(s.storyBeats) ? s.storyBeats : [],
+    };
+  }
   return {
     askNickname: s.askNickname !== false,
     showCorrectAtEnd: s.showCorrectAtEnd !== false,

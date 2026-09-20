@@ -67,6 +67,17 @@ export const DEFAULT_BOTTLE_SETTINGS = {
   closingMessage: '¡Repasamos todas las preguntas!',
 };
 
+// Ajustes propios del tipo "Tuberías": narrativa entre preguntas y, desde
+// cierto punto, un límite de tiempo ("oxígeno") por pregunta.
+export const DEFAULT_PIPES_SETTINGS = {
+  askNickname: true,
+  nicknameLabel: 'Tu nombre',
+  closingMessage: '¡Lo lograste! Gracias por jugar.',
+  timedFromIndex: -1, // -1 = nunca cronometrado
+  oxygenSeconds: 20,
+  storyBeats: [], // [{ beforeIndex: number, text: string }]
+};
+
 export const THEME_PRESETS = {
   clasico: DEFAULT_THEME,
   claro: {
@@ -114,6 +125,8 @@ export function mergeSettings(partial, type = 'QUIZ') {
         ? DEFAULT_BALLOONS_SETTINGS
         : type === 'BOTTLE'
           ? DEFAULT_BOTTLE_SETTINGS
-          : DEFAULT_SETTINGS;
+          : type === 'PIPES'
+            ? DEFAULT_PIPES_SETTINGS
+            : DEFAULT_SETTINGS;
   return { ...base, ...(partial || {}) };
 }

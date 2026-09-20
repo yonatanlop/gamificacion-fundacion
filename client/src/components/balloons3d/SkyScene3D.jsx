@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Sky, Cloud, Environment, Lightformer } from '@react-three/drei';
+import { Sky, Cloud } from '@react-three/drei';
+import Studio3D from '../three/Studio3D.jsx';
 
 const CLOUD_LAYOUT = [
   { position: [-14, 7, -20], scale: 3.2, speed: 0.15, opacity: 0.75 },
@@ -32,17 +33,7 @@ export default function SkyScene3D() {
   return (
     <>
       <Sky sunPosition={[10, 6, 10]} turbidity={4} rayleigh={1.5} mieCoefficient={0.02} mieDirectionalG={0.85} />
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[10, 12, 6]} intensity={1.4} color="#fff4dd" />
-      <directionalLight position={[-8, 4, -6]} intensity={0.3} color="#bcd7ff" />
-      {/* Reflejos de los globos: "estudio" generado en la propia escena (sin
-          descargar ninguna imagen externa), en vez del preset HDRI de drei
-          que requiere una descarga de red por cada jugador. */}
-      <Environment resolution={64}>
-        <Lightformer intensity={2} color="#ffffff" position={[0, 6, -10]} scale={[12, 8, 1]} />
-        <Lightformer intensity={1} color="#bcd7ff" position={[-10, 2, 4]} rotation={[0, Math.PI / 2, 0]} scale={[8, 6, 1]} />
-        <Lightformer intensity={1.2} color="#fff4dd" position={[10, 2, 4]} rotation={[0, -Math.PI / 2, 0]} scale={[8, 6, 1]} />
-      </Environment>
+      <Studio3D />
       {CLOUD_LAYOUT.map((c, i) => (
         <DriftingCloud key={i} {...c} />
       ))}

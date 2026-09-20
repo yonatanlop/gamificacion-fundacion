@@ -96,6 +96,32 @@ export function balloonQuestionData(input, order) {
   };
 }
 
+/** Normaliza el payload validado de una pregunta de Tuberías a data de Prisma:
+ * como Quiz (con respuesta correcta), pero sin tiempo ni puntos — el color de
+ * cada tubo es el color de su propia opción (mismo campo que ya usa Quiz). */
+export function pipesQuestionData(input, order) {
+  return {
+    order,
+    type: input.type,
+    text: input.text,
+    image: input.image || null,
+    mediaType: input.image ? 'image' : 'none',
+    timeLimit: 0,
+    points: 0,
+    pointsMode: 'ZERO',
+    allowOther: false,
+    options: {
+      create: input.options.map((o, i) => ({
+        order: i,
+        text: o.text || null,
+        image: o.image || null,
+        color: o.color || null,
+        isCorrect: !!o.isCorrect,
+      })),
+    },
+  };
+}
+
 /** Normaliza el payload validado de una pregunta de Botella a data de Prisma:
  * pregunta abierta + respuesta modelo a revelar, sin opciones ni tiempo/puntos. */
 export function bottleQuestionData(input, order) {

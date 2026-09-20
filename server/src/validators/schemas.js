@@ -84,7 +84,7 @@ export const settingsSchema = z
   .passthrough();
 
 export const quizCreateSchema = z.object({
-  type: z.enum(['QUIZ', 'SURVEY', 'BALLOONS', 'BOTTLE']).default('QUIZ'),
+  type: z.enum(['QUIZ', 'SURVEY', 'BALLOONS', 'BOTTLE', 'PIPES']).default('QUIZ'),
   title: z.string().min(1).max(200),
   description: z.string().max(2000).optional().or(z.literal('')),
   slug: z.string().max(80).optional(),
@@ -174,6 +174,28 @@ export const surveyScreenSchema = z.object({
       message: 'Agrega al menos una opción con texto o imagen',
     }),
 });
+
+// Tuberías: como una pregunta de Quiz (con respuesta correcta), pero sin
+// tiempo/puntos por pregunta — el color de cada tubo es el color de su opción.
+export const pipesQuestionSchema = z
+  .object({
+    type: z.enum(['SINGLE', 'TRUE_FALSE']).default('SINGLE'),
+    text: z.string().min(1).max(1000),
+    image: imageRef.optional().or(z.literal('')),
+    options: z.array(optionSchema).min(2).max(4),
+  })
+  .refine((q) => q.options.some((o) => o.isCorrect), {
+    message: 'Debe haber al menos una opción correcta',
+    path: ['options'],
+  })
+  .refine((q) => q.type !== 'SINGLE' || q.options.filter((o) => o.isCorrect).length === 1, {
+    message: 'Una pregunta de opción única debe tener exactamente una respuesta correcta',
+    path: ['options'],
+  })
+  .refine((q) => q.type !== 'TRUE_FALSE' || q.options.length === 2, {
+    message: 'Verdadero/Falso debe tener exactamente 2 opciones',
+    path: ['options'],
+  });
 
 // Botella: pregunta abierta + respuesta modelo a revelar, sin opciones ni tiempo/puntos.
 export const bottleQuestionSchema = z.object({
