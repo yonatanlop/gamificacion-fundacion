@@ -8,18 +8,32 @@
 #   - Puerto 443 abierto en la "Security List" de OCI (igual que el 80).
 #   - En .env:  CADDY_DOMAIN=149-118-61-207.sslip.io   (CADDY_EMAIL es opcional)
 #
-# Con este overlay, "web" (nginx) deja de publicar el puerto directamente:
-# Caddy publica 80 y 443, termina TLS y redirige a nginx por la red interna.
+# Con este overlay, "gamificaciones-web" (nginx) deja de publicar el puerto
+# directamente: Caddy publica 80 y 443, termina TLS y redirige a nginx por la
+# red interna.
+#
+# IMPORTANTE (incidente 2026-09-20): el servicio de nginx se llama
+# "gamificaciones-web" y NO simplemente "web" a propósito. Si esta misma VM
+# aloja otros proyectos cuyo Caddy comparte una red externa (p.ej. "edge") con
+# el de este proyecto, y esos proyectos también nombran su contenedor de
+# frontend "web", la resolución de DNS de Docker puede devolver el contenedor
+# equivocado de forma intermitente cuando el nombre coincide entre proyectos
+# — así se rompió temporalmente la API en producción. Un nombre único por
+# proyecto evita el problema de raíz. Si este contenedor `caddy` es compartido
+# con otros sitios (Caddyfile editado a mano con varios bloques de dominio),
+# NO lo recrees con `up -d caddy`: el comando de abajo regenera el Caddyfile
+# desde cero solo con $CADDY_DOMAIN y borraría los demás bloques. Edita el
+# Caddyfile en vivo dentro del contenedor y recarga con `caddy reload` en su lugar.
 
 services:
-  web:
+  gamificaciones-web:
     ports: !reset []
 
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
     depends_on:
-      - web
+      - gamificaciones-web
     ports:
       - "80:80"
       - "443:443"
@@ -27,7 +41,7 @@ services:
     environment:
       CADDY_DOMAIN: ${CADDY_DOMAIN}
     command: >
-      sh -c 'printf "%s {\n\treverse_proxy web:80\n}\n" "$$CADDY_DOMAIN" > /etc/caddy/Caddyfile
+      sh -c 'printf "%s {\n\treverse_proxy gamificaciones-web:80\n}\n" "$$CADDY_DOMAIN" > /etc/caddy/Caddyfile
       && echo "--- Caddyfile ---" && cat /etc/caddy/Caddyfile
       && exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
     volumes:

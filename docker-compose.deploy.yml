@@ -50,7 +50,7 @@ services:
     expose:
       - "4000"
 
-  web:
+  gamificaciones-web:
     image: ghcr.io/yonatanlop/gamificacion-fundacion-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:

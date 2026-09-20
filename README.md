@@ -18,12 +18,12 @@ público para jugar.
 |----------|-----------|-----|
 | `db`     | PostgreSQL 16 | Base de datos |
 | `server` | Node 20 + Express + Prisma | API REST (`/api/*`), archivos subidos (`/uploads/*`) y librería de íconos (`/icons/*`) |
-| `web`    | React + Vite + Tailwind servido por nginx | UI + reverse proxy hacia `server` |
+| `gamificaciones-web` | React + Vite + Tailwind servido por nginx | UI + reverse proxy hacia `server` |
 
 ```
 client/   → SPA de React (panel admin + juego)
 server/   → API, Prisma, seed
-docker-compose.yml       → db + server + web
+docker-compose.yml       → db + server + gamificaciones-web
 docker-compose.prod.yml  → overlay opcional con Caddy (HTTPS automático)
 ```
 

@@ -38,7 +38,7 @@ services:
     expose:
       - "4000"
 
-  web:
+  gamificaciones-web:
     build:
       context: ./client
       args:
