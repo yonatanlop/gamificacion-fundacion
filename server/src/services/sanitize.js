@@ -1,4 +1,5 @@
 import { seededShuffle } from '../lib/shuffle.js';
+import { DEFAULT_BALLOON_SOUNDS } from '../lib/defaults.js';
 
 /**
  * Convierte un quiz de la base en la forma pública para jugar,
@@ -70,6 +71,9 @@ function publicSettings(settings, type) {
       askNickname: s.askNickname !== false,
       nicknameLabel: s.nicknameLabel || 'Tu nombre',
       closingMessage: s.closingMessage || '¡Reventaste todos los globos! Gracias por participar.',
+      // ¡ojo! sin esto, los sonidos configurados/subidos por el profesor nunca
+      // llegaban al jugador — toPublicQuiz() solo exponía estos 3 campos.
+      sounds: { ...DEFAULT_BALLOON_SOUNDS, ...(s.sounds || {}) },
     };
   }
   if (type === 'PIPES') {
