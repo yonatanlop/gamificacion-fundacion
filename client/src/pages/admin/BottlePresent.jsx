@@ -1,24 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.js';
+import { isWebglAvailable } from '../../lib/webgl.js';
 
-const PALETTE = ['#e11d48', '#f97316', '#d97706', '#16a34a', '#0d9488', '#2563eb', '#7c3aed', '#c026d3'];
-const CX = 150;
-const CY = 150;
-const R = 140;
-
-function pointAt(angleDeg, radius) {
-  const rad = (angleDeg * Math.PI) / 180;
-  return { x: CX + radius * Math.sin(rad), y: CY - radius * Math.cos(rad) };
-}
-
-function sliceGap(startDeg, endDeg) {
-  const p1 = pointAt(startDeg, R);
-  const p2 = pointAt(endDeg, R);
-  const largeArc = endDeg - startDeg > 180 ? 1 : 0;
-  return `M ${CX},${CY} L ${p1.x},${p1.y} A ${R},${R} 0 ${largeArc},1 ${p2.x},${p2.y} Z`;
-}
+const WheelScene3D = lazy(() => import('../../components/wheel3d/WheelScene3D.jsx'));
 
 /**
  * Ruleta de preguntas para presentar en clase. Sin sesión de jugador ni
@@ -54,10 +40,11 @@ export default function BottlePresent() {
     return () => window.removeEventListener('keydown', onKey);
   }, [id, navigate]);
 
-  const segments = useMemo(() => {
-    if (!quiz || !remaining) return [];
-    return quiz.questions.filter((q) => remaining.has(q.id));
-  }, [quiz, remaining]);
+  // El disco siempre muestra TODAS las preguntas en posiciones fijas (no se
+  // achica al responder) — solo cambia qué gajos aparecen marcados como ya
+  // respondidos. El sorteo elige únicamente entre las que faltan.
+  const segments = quiz?.questions || [];
+  const webglOk = useMemo(() => isWebglAvailable(), []);
 
   if (isLoading) return <Shell>Cargando…</Shell>;
   if (isError) return <Shell>{error.message}</Shell>;
@@ -67,10 +54,12 @@ export default function BottlePresent() {
   const finished = remaining !== null && remaining.size === 0;
 
   function spin() {
-    if (spinning || segments.length === 0) return;
-    const idx = Math.floor(Math.random() * segments.length);
-    const target = segments[idx];
-    const segAngle = 360 / segments.length;
+    if (spinning || !remaining || remaining.size === 0) return;
+    const pickable = quiz.questions.filter((q) => remaining.has(q.id));
+    const target = pickable[Math.floor(Math.random() * pickable.length)];
+    const idx = quiz.questions.findIndex((q) => q.id === target.id); // posición fija del gajo en el disco completo
+    const total = quiz.questions.length;
+    const segAngle = 360 / total;
     const segCenter = idx * segAngle + segAngle / 2;
     const extraSpins = 4 + Math.floor(Math.random() * 3);
     const currentMod = ((rotation % 360) + 360) % 360;
@@ -93,11 +82,6 @@ export default function BottlePresent() {
     pendingRef.current = null;
     setSpinning(false);
     setLanded(quiz.questions.find((q) => q.id === targetId));
-  }
-
-  function onWheelTransitionEnd(e) {
-    if (e.propertyName !== 'transform' || !pendingRef.current) return;
-    resolveSpin(pendingRef.current);
   }
 
   function spinAgain() {
@@ -148,61 +132,35 @@ export default function BottlePresent() {
           </div>
         ) : (
           <>
-            <div className="relative" style={{ width: 320, height: 320 }}>
-              <div
-                className="absolute left-1/2 top-[-14px] z-10 h-0 w-0 -translate-x-1/2"
-                style={{
-                  borderLeft: '14px solid transparent',
-                  borderRight: '14px solid transparent',
-                  borderTop: '22px solid #facc15',
-                }}
-              />
-              <div
-                className="h-full w-full"
-                style={{
-                  transform: `rotate(${rotation}deg)`,
-                  transition: spinning ? 'transform 3.8s cubic-bezier(0.15,0.65,0.1,1)' : 'none',
-                  transformOrigin: '50% 50%',
-                }}
-                onTransitionEnd={onWheelTransitionEnd}
-              >
-                <svg viewBox="0 0 300 300" className="h-full w-full drop-shadow-xl">
-                  {segments.map((q, i) => {
-                    const segAngle = 360 / segments.length;
-                    const start = i * segAngle;
-                    const end = start + segAngle;
-                    const mid = start + segAngle / 2;
-                    const labelPos = pointAt(mid, R * 0.68);
-                    return (
-                      <g key={q.id}>
-                        <path d={sliceGap(start, end)} fill={PALETTE[i % PALETTE.length]} stroke="#0f172a" strokeWidth="2" />
-                        <text
-                          x={labelPos.x}
-                          y={labelPos.y}
-                          fill="#fff"
-                          fontSize="20"
-                          fontWeight="800"
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                        >
-                          {i + 1}
-                        </text>
-                      </g>
-                    );
-                  })}
-                  <circle cx={CX} cy={CY} r="22" fill="#0f172a" stroke="#facc15" strokeWidth="3" />
-                </svg>
-              </div>
+            <div className="relative w-full max-w-xl" style={{ height: 380 }}>
+              {webglOk ? (
+                <Suspense fallback={<div className="absolute inset-0" />}>
+                  <div className="absolute inset-0">
+                    <WheelScene3D
+                      segments={segments}
+                      remaining={remaining}
+                      targetRotation={rotation}
+                      spinning={spinning}
+                      onSpinDone={() => resolveSpin(pendingRef.current)}
+                    />
+                  </div>
+                </Suspense>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-lg font-semibold">
+                  Tu navegador no soporta gráficos 3D. Por favor abre esta pantalla desde otro navegador o
+                  dispositivo actualizado.
+                </div>
+              )}
             </div>
 
             <button
               onClick={spin}
-              disabled={spinning || segments.length === 0}
+              disabled={spinning || !remaining || remaining.size === 0}
               className="rounded-2xl bg-indigo-600 px-10 py-4 text-xl font-extrabold shadow-lg hover:brightness-110 disabled:opacity-50"
             >
               {spinning ? 'Girando…' : 'Girar'}
             </button>
-            <p className="text-white/50">{segments.length} pregunta(s) por girar</p>
+            <p className="text-white/50">{remaining ? remaining.size : 0} pregunta(s) por girar</p>
           </>
         )}
       </div>
