@@ -31,6 +31,7 @@ export function buildQuizCopyData(src, { slug, createdById, title }) {
         balloonColor: q.balloonColor,
         balloonSpeed: q.balloonSpeed,
         answerText: q.answerText,
+        wrongAnswerText: q.wrongAnswerText,
         options: {
           create: q.options.map((o, oi) => ({
             order: oi,
@@ -136,6 +137,7 @@ export function bottleQuestionData(input, order) {
     pointsMode: 'ZERO',
     allowOther: false,
     answerText: input.answerText,
+    wrongAnswerText: input.wrongAnswerText?.trim() || null,
     options: { create: [] },
   };
 }

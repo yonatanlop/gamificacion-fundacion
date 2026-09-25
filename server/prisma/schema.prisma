@@ -108,7 +108,8 @@ model Question {
   allowOther Boolean        @default(false)
   balloonColor String?
   balloonSpeed String?      // 'SLOW' | 'MEDIUM' | 'FAST' (solo tipo BALLOONS)
-  answerText String?        // respuesta modelo a revelar (solo tipo BOTTLE)
+  answerText String?        // respuesta VERDADERA a revelar (solo tipo BOTTLE)
+  wrongAnswerText String?   // respuesta FALSA opcional que se muestra junto a la verdadera (solo tipo BOTTLE)
   options    AnswerOption[]
 
   @@index([quizId])

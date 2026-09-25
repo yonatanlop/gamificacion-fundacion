@@ -202,6 +202,8 @@ export const bottleQuestionSchema = z.object({
   text: z.string().min(1).max(1000),
   image: imageRef.optional().or(z.literal('')),
   answerText: z.string().min(1).max(2000),
+  // Opcional: si viene, la ruleta muestra dos respuestas (esta es la falsa).
+  wrongAnswerText: z.string().max(2000).optional().or(z.literal('')),
 });
 
 export const reorderSchema = z.object({

@@ -25,7 +25,10 @@ export default function BottlePresent() {
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [landed, setLanded] = useState(null);
-  const [revealed, setRevealed] = useState(false);
+  const [revealed, setRevealed] = useState(false); // modo simple (pregunta sin respuesta falsa)
+  const [answers, setAnswers] = useState(null); // [{ text, correct }] en orden aleatorio, o null (modo simple)
+  const [shown, setShown] = useState(0); // cuántas respuestas ya se mostraron (0, 1 o 2)
+  const [picked, setPicked] = useState(null); // null | 0 | 1 (la que señaló el profesor) | 'reveal' (solo revelar la correcta)
   const pendingRef = useRef(null);
 
   useEffect(() => {
@@ -68,7 +71,7 @@ export default function BottlePresent() {
 
     setSpinning(true);
     setLanded(null);
-    setRevealed(false);
+    resetReveal();
     pendingRef.current = target.id;
     setRotation((r) => r + delta);
     // Respaldo por si `transitionend` no dispara (pestaña en segundo plano,
@@ -81,7 +84,25 @@ export default function BottlePresent() {
     if (pendingRef.current !== targetId) return; // ya resuelto por el otro camino, o es un giro viejo
     pendingRef.current = null;
     setSpinning(false);
-    setLanded(quiz.questions.find((q) => q.id === targetId));
+    const q = quiz.questions.find((x) => x.id === targetId);
+    resetReveal();
+    if (q.wrongAnswerText) {
+      // Orden aleatorio para que la verdadera no salga siempre primero.
+      const pair = [
+        { text: q.answerText, correct: true },
+        { text: q.wrongAnswerText, correct: false },
+      ];
+      if (Math.random() < 0.5) pair.reverse();
+      setAnswers(pair);
+    }
+    setLanded(q);
+  }
+
+  function resetReveal() {
+    setRevealed(false);
+    setAnswers(null);
+    setShown(0);
+    setPicked(null);
   }
 
   function spinAgain() {
@@ -92,13 +113,13 @@ export default function BottlePresent() {
       return next;
     });
     setLanded(null);
-    setRevealed(false);
+    resetReveal();
   }
 
   function restart() {
     setRemaining(new Set(quiz.questions.map((q) => q.id)));
     setLanded(null);
-    setRevealed(false);
+    resetReveal();
   }
 
   return (
@@ -172,7 +193,56 @@ export default function BottlePresent() {
             {landed.image && (
               <img src={landed.image} alt="" className="mx-auto mb-6 max-h-52 rounded-xl object-contain" />
             )}
-            {!revealed ? (
+            {answers ? (
+              <div className="space-y-5">
+                {shown > 0 && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {answers.slice(0, shown).map((a, i) => (
+                      <AnswerCard
+                        key={i}
+                        letter={i === 0 ? 'A' : 'B'}
+                        answer={a}
+                        status={cardStatus(a, i, picked)}
+                        clickable={shown === 2 && picked === null}
+                        onClick={() => setPicked(i)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {shown < 2 && (
+                  <button
+                    onClick={() => setShown((n) => n + 1)}
+                    className="rounded-xl bg-indigo-600 px-8 py-3 text-lg font-extrabold text-white hover:brightness-110"
+                  >
+                    {shown === 0 ? 'Ver respuestas' : 'Mostrar la otra respuesta'}
+                  </button>
+                )}
+
+                {shown === 2 && picked === null && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-slate-500">
+                      Haz clic en la respuesta que señalen los estudiantes
+                    </p>
+                    <button
+                      onClick={() => setPicked('reveal')}
+                      className="text-sm text-slate-400 underline hover:text-slate-600"
+                    >
+                      Revelar la correcta sin elegir
+                    </button>
+                  </div>
+                )}
+
+                {picked !== null && (
+                  <button
+                    onClick={spinAgain}
+                    className="rounded-xl bg-green-600 px-8 py-3 text-lg font-extrabold text-white hover:brightness-110"
+                  >
+                    Girar de nuevo
+                  </button>
+                )}
+              </div>
+            ) : !revealed ? (
               <button
                 onClick={() => setRevealed(true)}
                 className="rounded-xl bg-indigo-600 px-8 py-3 text-lg font-extrabold text-white hover:brightness-110"
@@ -194,6 +264,53 @@ export default function BottlePresent() {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Estado visual de una tarjeta según lo que señaló el profesor:
+ *  - neutral: aún no se elige nada.
+ *  - correct / wrong: la tarjeta elegida (verde ✓ o roja ✗).
+ *  - reveal: la que no se eligió pero era la correcta (para mostrarla si se falló).
+ *  - dim: la que no se eligió y era falsa.
+ */
+function cardStatus(answer, index, picked) {
+  if (picked === null) return 'neutral';
+  if (picked === 'reveal') return answer.correct ? 'correct' : 'dim';
+  if (picked === index) return answer.correct ? 'correct' : 'wrong';
+  return answer.correct ? 'reveal' : 'dim';
+}
+
+const CARD_STYLE = {
+  neutral: 'border-indigo-200 bg-indigo-50 text-indigo-900',
+  correct: 'border-green-500 bg-green-100 text-green-900',
+  wrong: 'border-red-500 bg-red-100 text-red-900',
+  reveal: 'border-green-500 bg-green-50 text-green-900',
+  dim: 'border-slate-200 bg-slate-100 text-slate-400',
+};
+
+const CARD_VERDICT = {
+  correct: '✓ ¡Correcta!',
+  wrong: '✗ Incorrecta',
+  reveal: '✓ Esta era la correcta',
+};
+
+function AnswerCard({ letter, answer, status, clickable, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!clickable}
+      className={`flex flex-col items-center gap-2 rounded-2xl border-4 p-5 text-lg font-semibold transition ${
+        CARD_STYLE[status]
+      } ${clickable ? 'cursor-pointer hover:scale-[1.02] hover:border-indigo-500 hover:shadow-lg' : 'cursor-default'}`}
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-lg font-extrabold">
+        {letter}
+      </span>
+      <span>{answer.text}</span>
+      {CARD_VERDICT[status] && <span className="text-xl font-extrabold">{CARD_VERDICT[status]}</span>}
+    </button>
   );
 }
 

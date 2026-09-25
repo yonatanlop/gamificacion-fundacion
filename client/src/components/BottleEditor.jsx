@@ -5,8 +5,13 @@ import { Button, Card, Textarea, ConfirmButton } from './ui.jsx';
 import ImageInput from './ImageInput.jsx';
 
 function normalize(q) {
-  if (!q) return { text: '', image: '', answerText: '' };
-  return { text: q.text, image: q.image || '', answerText: q.answerText || '' };
+  if (!q) return { text: '', image: '', answerText: '', wrongAnswerText: '' };
+  return {
+    text: q.text,
+    image: q.image || '',
+    answerText: q.answerText || '',
+    wrongAnswerText: q.wrongAnswerText || '',
+  };
 }
 
 function BottleForm({ initial, onSave, onCancel, saving }) {
@@ -16,8 +21,13 @@ function BottleForm({ initial, onSave, onCancel, saving }) {
   function submit() {
     setErr('');
     if (!q.text.trim()) return setErr('Escribe la pregunta.');
-    if (!q.answerText.trim()) return setErr('Escribe la respuesta que se revelará.');
-    return onSave({ text: q.text.trim(), image: q.image.trim(), answerText: q.answerText.trim() });
+    if (!q.answerText.trim()) return setErr('Escribe la respuesta verdadera.');
+    return onSave({
+      text: q.text.trim(),
+      image: q.image.trim(),
+      answerText: q.answerText.trim(),
+      wrongAnswerText: q.wrongAnswerText.trim(),
+    });
   }
 
   return (
@@ -25,11 +35,22 @@ function BottleForm({ initial, onSave, onCancel, saving }) {
       <Textarea label="Pregunta" rows={2} value={q.text} onChange={(e) => setQ({ ...q, text: e.target.value })} />
       <ImageInput label="Imagen (opcional)" value={q.image} onChange={(v) => setQ({ ...q, image: v })} />
       <Textarea
-        label="Respuesta (se revela al presentar)"
-        rows={3}
+        label="Respuesta VERDADERA"
+        rows={2}
         value={q.answerText}
         onChange={(e) => setQ({ ...q, answerText: e.target.value })}
       />
+      <Textarea
+        label="Respuesta FALSA (opcional)"
+        rows={2}
+        placeholder="Si la dejas vacía, al presentar solo se revela la verdadera"
+        value={q.wrongAnswerText}
+        onChange={(e) => setQ({ ...q, wrongAnswerText: e.target.value })}
+      />
+      <p className="text-xs text-slate-500">
+        Con respuesta falsa, al presentar se muestran las dos (en orden aleatorio) para que los estudiantes elijan
+        cuál es la correcta.
+      </p>
 
       {err && <p className="text-sm text-red-600">{err}</p>}
 
@@ -83,8 +104,9 @@ export default function BottleEditor({ quiz }) {
   return (
     <div className="space-y-3">
       <p className="text-sm text-slate-500">
-        Cada pregunta ocupa un espacio de la ruleta. Al presentar, el profesor gira, ve la pregunta y revela la
-        respuesta con un clic — sin opciones ni puntaje.
+        Cada pregunta ocupa un espacio de la ruleta. Al presentar, el profesor gira, ve la pregunta y va mostrando
+        las respuestas con un clic (una verdadera y una falsa). Los estudiantes eligen por el chat y el profesor
+        hace clic en la que señalen para ver si es correcta o incorrecta — sin puntaje.
       </p>
 
       {quiz.questions.map((q, i) => (
@@ -103,7 +125,12 @@ export default function BottleEditor({ quiz }) {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-slate-800">{q.text}</p>
-                <p className="truncate text-xs text-slate-500">Respuesta: {q.answerText}</p>
+                <p className="truncate text-xs text-green-700">✓ {q.answerText}</p>
+                {q.wrongAnswerText ? (
+                  <p className="truncate text-xs text-red-600">✗ {q.wrongAnswerText}</p>
+                ) : (
+                  <p className="text-xs text-slate-400">Sin respuesta falsa (se revela solo la verdadera)</p>
+                )}
               </div>
               <div className="flex gap-1">
                 <Button variant="ghost" onClick={() => move(i, -1)} disabled={i === 0}>
