@@ -26,10 +26,16 @@ export default function BottlePresent() {
   const [spinning, setSpinning] = useState(false);
   const [landed, setLanded] = useState(null);
   const [revealed, setRevealed] = useState(false); // modo simple (pregunta sin respuesta falsa)
-  const [answers, setAnswers] = useState(null); // [{ text, correct }] en orden aleatorio, o null (modo simple)
+  // Modo con dos respuestas: [incorrecta, correcta] en ORDEN DE APARICIÓN (primero sale la
+  // incorrecta, con el siguiente clic la correcta), cada una con el `slot` (0 izquierda /
+  // 1 derecha, letra A/B) donde se dibuja — el slot es aleatorio para que la correcta no
+  // esté siempre en el mismo lado. null = pregunta sin respuesta falsa (modo simple).
+  const [answers, setAnswers] = useState(null);
   const [shown, setShown] = useState(0); // cuántas respuestas ya se mostraron (0, 1 o 2)
-  const [picked, setPicked] = useState(null); // null | 0 | 1 (la que señaló el profesor) | 'reveal' (solo revelar la correcta)
+  const [wrongTried, setWrongTried] = useState(false); // el profesor ya señaló la incorrecta
+  const [verdict, setVerdict] = useState(null); // null | 'correct' (eligió la correcta) | 'reveal' (solo se reveló)
   const pendingRef = useRef(null);
+  const closeTimerRef = useRef(null);
 
   useEffect(() => {
     if (quiz && remaining === null) setRemaining(new Set(quiz.questions.map((q) => q.id)));
@@ -87,33 +93,50 @@ export default function BottlePresent() {
     const q = quiz.questions.find((x) => x.id === targetId);
     resetReveal();
     if (q.wrongAnswerText) {
-      // Orden aleatorio para que la verdadera no salga siempre primero.
-      const pair = [
-        { text: q.answerText, correct: true },
-        { text: q.wrongAnswerText, correct: false },
-      ];
-      if (Math.random() < 0.5) pair.reverse();
-      setAnswers(pair);
+      const correctSlot = Math.random() < 0.5 ? 0 : 1;
+      setAnswers([
+        { text: q.wrongAnswerText, correct: false, slot: 1 - correctSlot },
+        { text: q.answerText, correct: true, slot: correctSlot },
+      ]);
     }
     setLanded(q);
   }
 
   function resetReveal() {
+    clearTimeout(closeTimerRef.current);
     setRevealed(false);
     setAnswers(null);
     setShown(0);
-    setPicked(null);
+    setWrongTried(false);
+    setVerdict(null);
   }
 
-  function spinAgain() {
-    if (!landed) return;
+  // Marca la pregunta como ya salida y vuelve a la ruleta.
+  function closeQuestion(questionId) {
     setRemaining((prev) => {
       const next = new Set(prev);
-      next.delete(landed.id);
+      next.delete(questionId);
       return next;
     });
     setLanded(null);
     resetReveal();
+  }
+
+  function spinAgain() {
+    if (landed) closeQuestion(landed.id);
+  }
+
+  // El profesor hizo clic en una de las dos respuestas.
+  function pickAnswer(answer) {
+    if (answer.correct) {
+      const id = landed.id;
+      setVerdict('correct');
+      // Muestra "¡Correcta!" un momento y cierra sola la pregunta (también hay
+      // un botón "Continuar" por si se quiere avanzar antes).
+      closeTimerRef.current = setTimeout(() => closeQuestion(id), 2200);
+    } else {
+      setWrongTried(true);
+    }
   }
 
   function restart() {
@@ -187,79 +210,99 @@ export default function BottlePresent() {
       </div>
 
       {landed && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-2xl rounded-2xl bg-white p-8 text-center text-slate-900">
-            <h2 className="mb-6 text-2xl font-extrabold">{landed.text}</h2>
-            {landed.image && (
-              <img src={landed.image} alt="" className="mx-auto mb-6 max-h-52 rounded-xl object-contain" />
-            )}
-            {answers ? (
-              <div className="space-y-5">
-                {shown > 0 && (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {answers.slice(0, shown).map((a, i) => (
-                      <AnswerCard
-                        key={i}
-                        letter={i === 0 ? 'A' : 'B'}
-                        answer={a}
-                        status={cardStatus(a, i, picked)}
-                        clickable={shown === 2 && picked === null}
-                        onClick={() => setPicked(i)}
-                      />
-                    ))}
-                  </div>
-                )}
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 p-4">
+          <div className="flex min-h-full items-center justify-center">
+            <div className="w-full max-w-2xl rounded-2xl bg-white p-8 text-center text-slate-900">
+              <h2 className="mb-6 text-2xl font-extrabold">{landed.text}</h2>
+              {landed.image && (
+                <img src={landed.image} alt="" className="mx-auto mb-6 max-h-52 rounded-xl object-contain" />
+              )}
+              {answers ? (
+                <div className="space-y-5">
+                  {shown > 0 && (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {[0, 1].map((slot) => {
+                        const idx = answers.findIndex((a) => a.slot === slot);
+                        const a = answers[idx];
+                        if (idx >= shown) {
+                          // Hueco de la respuesta que aún no aparece.
+                          return (
+                            <div
+                              key={slot}
+                              className="flex items-center justify-center rounded-2xl border-4 border-dashed border-slate-200 p-5 text-4xl font-extrabold text-slate-300"
+                            >
+                              ?
+                            </div>
+                          );
+                        }
+                        return (
+                          <AnswerCard
+                            key={slot}
+                            letter={slot === 0 ? 'A' : 'B'}
+                            answer={a}
+                            status={cardStatus(a, wrongTried, verdict)}
+                            clickable={shown === 2 && verdict === null && (a.correct || !wrongTried)}
+                            onClick={() => pickAnswer(a)}
+                            solved={verdict}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
 
-                {shown < 2 && (
-                  <button
-                    onClick={() => setShown((n) => n + 1)}
-                    className="rounded-xl bg-indigo-600 px-8 py-3 text-lg font-extrabold text-white hover:brightness-110"
-                  >
-                    {shown === 0 ? 'Ver respuestas' : 'Mostrar la otra respuesta'}
-                  </button>
-                )}
-
-                {shown === 2 && picked === null && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-slate-500">
-                      Haz clic en la respuesta que señalen los estudiantes
-                    </p>
+                  {verdict === null && shown < 2 && (
                     <button
-                      onClick={() => setPicked('reveal')}
-                      className="text-sm text-slate-400 underline hover:text-slate-600"
+                      onClick={() => setShown((n) => n + 1)}
+                      className="rounded-xl bg-indigo-600 px-8 py-3 text-lg font-extrabold text-white hover:brightness-110"
                     >
-                      Revelar la correcta sin elegir
+                      {shown === 0 ? 'Ver respuestas' : 'Mostrar la otra respuesta'}
                     </button>
-                  </div>
-                )}
+                  )}
 
-                {picked !== null && (
+                  {verdict === null && shown === 2 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-slate-500">
+                        {wrongTried
+                          ? 'Esa no era — haz clic en la otra respuesta'
+                          : 'Haz clic en la respuesta que señalen los estudiantes'}
+                      </p>
+                      <button
+                        onClick={() => setVerdict('reveal')}
+                        className="text-sm text-slate-400 underline hover:text-slate-600"
+                      >
+                        Revelar la correcta sin elegir
+                      </button>
+                    </div>
+                  )}
+
+                  {verdict !== null && (
+                    <button
+                      onClick={spinAgain}
+                      className="rounded-xl bg-green-600 px-8 py-3 text-lg font-extrabold text-white hover:brightness-110"
+                    >
+                      Continuar
+                    </button>
+                  )}
+                </div>
+              ) : !revealed ? (
+                <button
+                  onClick={() => setRevealed(true)}
+                  className="rounded-xl bg-indigo-600 px-8 py-3 text-lg font-extrabold text-white hover:brightness-110"
+                >
+                  Ver respuesta
+                </button>
+              ) : (
+                <div className="space-y-5">
+                  <p className="rounded-xl bg-indigo-50 p-4 text-lg font-semibold text-indigo-900">{landed.answerText}</p>
                   <button
                     onClick={spinAgain}
                     className="rounded-xl bg-green-600 px-8 py-3 text-lg font-extrabold text-white hover:brightness-110"
                   >
                     Girar de nuevo
                   </button>
-                )}
-              </div>
-            ) : !revealed ? (
-              <button
-                onClick={() => setRevealed(true)}
-                className="rounded-xl bg-indigo-600 px-8 py-3 text-lg font-extrabold text-white hover:brightness-110"
-              >
-                Ver respuesta
-              </button>
-            ) : (
-              <div className="space-y-5">
-                <p className="rounded-xl bg-indigo-50 p-4 text-lg font-semibold text-indigo-900">{landed.answerText}</p>
-                <button
-                  onClick={spinAgain}
-                  className="rounded-xl bg-green-600 px-8 py-3 text-lg font-extrabold text-white hover:brightness-110"
-                >
-                  Girar de nuevo
-                </button>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -268,34 +311,34 @@ export default function BottlePresent() {
 }
 
 /**
- * Estado visual de una tarjeta según lo que señaló el profesor:
- *  - neutral: aún no se elige nada.
- *  - correct / wrong: la tarjeta elegida (verde ✓ o roja ✗).
- *  - reveal: la que no se eligió pero era la correcta (para mostrarla si se falló).
- *  - dim: la que no se eligió y era falsa.
+ * Estado visual de una tarjeta:
+ *  - neutral: todavía sin elegir.
+ *  - wrong: la incorrecta ya señalada (roja ✗).
+ *  - correct: la correcta, ya elegida o revelada (verde ✓).
+ *  - dim: la incorrecta que queda atenuada cuando ya se resolvió la pregunta.
  */
-function cardStatus(answer, index, picked) {
-  if (picked === null) return 'neutral';
-  if (picked === 'reveal') return answer.correct ? 'correct' : 'dim';
-  if (picked === index) return answer.correct ? 'correct' : 'wrong';
-  return answer.correct ? 'reveal' : 'dim';
+function cardStatus(answer, wrongTried, verdict) {
+  if (answer.correct) return verdict !== null ? 'correct' : 'neutral';
+  if (verdict !== null) return wrongTried ? 'wrong' : 'dim';
+  return wrongTried ? 'wrong' : 'neutral';
 }
 
 const CARD_STYLE = {
   neutral: 'border-indigo-200 bg-indigo-50 text-indigo-900',
   correct: 'border-green-500 bg-green-100 text-green-900',
   wrong: 'border-red-500 bg-red-100 text-red-900',
-  reveal: 'border-green-500 bg-green-50 text-green-900',
   dim: 'border-slate-200 bg-slate-100 text-slate-400',
 };
 
-const CARD_VERDICT = {
-  correct: '✓ ¡Correcta!',
-  wrong: '✗ Incorrecta',
-  reveal: '✓ Esta era la correcta',
-};
-
-function AnswerCard({ letter, answer, status, clickable, onClick }) {
+function AnswerCard({ letter, answer, status, clickable, onClick, solved }) {
+  const verdictText =
+    status === 'wrong'
+      ? '✗ Incorrecta'
+      : status === 'correct'
+        ? solved === 'correct'
+          ? '✓ ¡Correcto!'
+          : '✓ Esta es la correcta'
+        : null;
   return (
     <button
       type="button"
@@ -309,7 +352,7 @@ function AnswerCard({ letter, answer, status, clickable, onClick }) {
         {letter}
       </span>
       <span>{answer.text}</span>
-      {CARD_VERDICT[status] && <span className="text-xl font-extrabold">{CARD_VERDICT[status]}</span>}
+      {verdictText && <span className="text-xl font-extrabold">{verdictText}</span>}
     </button>
   );
 }
