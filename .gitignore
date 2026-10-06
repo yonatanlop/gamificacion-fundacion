@@ -11,3 +11,5 @@ server/prisma/dev.db
 uploads-data/
 .vite/
 .claude/
+
+blender-work/

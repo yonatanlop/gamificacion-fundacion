@@ -16,6 +16,8 @@ import GameResultPage from './pages/play/GameResultPage.jsx';
 import SurveyRunner from './pages/play/SurveyRunner.jsx';
 import BalloonRunner from './pages/play/BalloonRunner.jsx';
 import PipesRunner from './pages/play/PipesRunner.jsx';
+import AvatarsPage from './pages/admin/AvatarsPage.jsx';
+import AvatarEditorPage from './pages/admin/AvatarEditorPage.jsx';
 
 function RequireAuth({ children }) {
   const { admin, loading } = useAuth();
@@ -40,6 +42,9 @@ function AdminShell({ children }) {
             </Link>
             <Link to="/admin/iconos" className="text-slate-600 hover:text-indigo-700">
               Íconos
+            </Link>
+            <Link to="/admin/avatares" className="text-slate-600 hover:text-indigo-700">
+              Avatares
             </Link>
             {isOwner && (
               <Link to="/admin/usuarios" className="text-slate-600 hover:text-indigo-700">
@@ -119,6 +124,26 @@ export default function App() {
           <RequireAuth>
             <AdminShell>
               <IconLibraryPage />
+            </AdminShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/avatares"
+        element={
+          <RequireAuth>
+            <AdminShell>
+              <AvatarsPage />
+            </AdminShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/avatares/:id"
+        element={
+          <RequireAuth>
+            <AdminShell>
+              <AvatarEditorPage />
             </AdminShell>
           </RequireAuth>
         }

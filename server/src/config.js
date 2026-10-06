@@ -21,6 +21,8 @@ export const config = {
     .map((s) => s.trim())
     .filter(Boolean),
   publicBaseUrl: process.env.PUBLIC_BASE_URL || '',
+  // Opcional: sin clave, la sección de voces responde 503 con un mensaje claro.
+  elevenLabsApiKey: process.env.ELEVENLABS_API_KEY || '',
   seedAdmin: {
     email: process.env.SEED_ADMIN_EMAIL || '',
     password: process.env.SEED_ADMIN_PASSWORD || '',

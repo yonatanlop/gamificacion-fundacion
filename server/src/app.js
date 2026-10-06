@@ -11,6 +11,7 @@ import questionRoutes from './routes/questions.routes.js';
 import uploadRoutes from './routes/uploads.routes.js';
 import playRoutes from './routes/play.routes.js';
 import { iconsApiRouter, iconsStaticRouter } from './routes/icons.routes.js';
+import avatarRoutes from './routes/avatars.routes.js';
 
 export function createApp() {
   const app = express();
@@ -43,6 +44,7 @@ export function createApp() {
   app.use('/api/uploads', uploadRoutes);
   app.use('/api/play', playRoutes);
   app.use('/api/icons', iconsApiRouter);
+  app.use('/api/avatars', avatarRoutes);
 
   app.use('/api', notFound);
   app.use(errorHandler);

@@ -1,0 +1,3 @@
+Modelo humano base (body.json): generado a partir de los assets de MakeHuman / MPFB2
+(makehumancommunity/mpfb2, licencia de assets CC0 1.0 Universal, dominio público).
+El código del generador (scripts/bake-avatar.mjs) es propio del proyecto.

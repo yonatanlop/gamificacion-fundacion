@@ -224,3 +224,18 @@ export const answerSchema = z.object({
   otherText: z.string().trim().max(500).optional().or(z.literal('')),
   timeMs: z.number().int().min(0).max(1000 * 60 * 30).default(0),
 });
+
+// Avatares: config libre de rasgos (valores 0-1 por morph, colores hex, ropa y fondo).
+export const avatarSchema = z.object({
+  name: z.string().min(1).max(120),
+  config: z.record(z.any()).default({}),
+  script: z.array(z.string().min(1).max(500)).max(50).default([]),
+  voiceId: z.string().max(64).optional().or(z.literal('')),
+});
+
+export const avatarUpdateSchema = avatarSchema.partial();
+
+export const speakSchema = z.object({
+  text: z.string().min(1).max(500),
+  voiceId: z.string().min(1).max(64),
+});

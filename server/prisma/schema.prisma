@@ -58,6 +58,7 @@ model Admin {
   quizzes        Quiz[]
   sharesSent     QuizShare[] @relation("SharesSent")
   sharesReceived QuizShare[] @relation("SharesReceived")
+  avatars        Avatar[]
 }
 
 model Quiz {
@@ -77,6 +78,18 @@ model Quiz {
   shares      QuizShare[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+}
+
+model Avatar {
+  id          String   @id @default(cuid())
+  name        String
+  config      Json     // rasgos: morphs, altura, colores, ropa, fondo
+  script      Json     // lista de textos que dice el personaje
+  voiceId     String?
+  createdById String?
+  createdBy   Admin?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model QuizShare {
