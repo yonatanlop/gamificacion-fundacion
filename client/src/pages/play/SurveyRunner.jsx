@@ -157,7 +157,7 @@ export default function SurveyRunner() {
             )}
 
             <div className="flex flex-col gap-3">
-              {screen.options.map((opt) => {
+              {screen.type !== 'TEXT' && screen.options.map((opt) => {
                 const on = current.selected.has(opt.id);
                 const c = opt.color || helper.optionColor(0);
                 return (
@@ -188,9 +188,11 @@ export default function SurveyRunner() {
 
               {screen.allowOther && (
                 <div className="rounded-2xl border-2 border-dashed border-white/50 bg-white/10 p-3">
-                  <label className="mb-1 block text-base font-semibold">Otra respuesta (opcional)</label>
+                  <label className="mb-1 block text-base font-semibold">
+                    {screen.type === 'TEXT' ? 'Tu respuesta' : 'Otra respuesta (opcional)'}
+                  </label>
                   <textarea
-                    rows={2}
+                    rows={screen.type === 'TEXT' ? 4 : 2}
                     value={current.other}
                     onChange={(e) => setOther(e.target.value)}
                     placeholder="Escribe aquí… (puedes usar el micrófono del teclado 🎤)"
@@ -202,7 +204,7 @@ export default function SurveyRunner() {
             </div>
 
             {error && <p className="text-center text-base font-semibold text-red-100">{error}</p>}
-            <BigButton onClick={next} disabled={busy}>
+            <BigButton onClick={next} disabled={busy || (screen.type === 'TEXT' && !current.other.trim())}>
               {busy ? 'Guardando…' : index + 1 < screens.length ? 'Siguiente' : 'Terminar'}
             </BigButton>
           </div>

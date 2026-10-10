@@ -29,6 +29,7 @@ enum QuestionType {
   SINGLE
   MULTIPLE
   TRUE_FALSE
+  TEXT
 }
 
 enum PointsMode {

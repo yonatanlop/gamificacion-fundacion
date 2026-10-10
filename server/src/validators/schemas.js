@@ -154,26 +154,36 @@ export const balloonQuestionSchema = z
   });
 
 // Pantalla de un Sondeo: sin respuesta correcta, sin tiempo ni puntos.
-export const surveyScreenSchema = z.object({
-  type: z.enum(['SINGLE', 'MULTIPLE']).default('SINGLE'),
-  text: z.string().min(1).max(1000),
-  image: imageRef.optional().or(z.literal('')),
-  allowOther: z.boolean().default(false),
-  options: z
-    .array(
-      z.object({
-        id: z.string().optional(),
-        text: z.string().max(500).optional().or(z.literal('')),
-        image: imageRef.optional().or(z.literal('')),
-        color: hexColor.optional().or(z.literal('')),
-      }),
-    )
-    .min(1)
-    .max(8)
-    .refine((opts) => opts.some((o) => (o.text && o.text.trim()) || (o.image && o.image.trim())), {
-      message: 'Agrega al menos una opción con texto o imagen',
-    }),
-});
+// "TEXT" es una pantalla de solo texto libre: sin opciones, solo el cuadro de respuesta.
+export const surveyScreenSchema = z
+  .object({
+    type: z.enum(['SINGLE', 'MULTIPLE', 'TEXT']).default('SINGLE'),
+    text: z.string().min(1).max(1000),
+    image: imageRef.optional().or(z.literal('')),
+    allowOther: z.boolean().default(false),
+    options: z
+      .array(
+        z.object({
+          id: z.string().optional(),
+          text: z.string().max(500).optional().or(z.literal('')),
+          image: imageRef.optional().or(z.literal('')),
+          color: hexColor.optional().or(z.literal('')),
+        }),
+      )
+      .max(8)
+      .default([]),
+  })
+  // Una pantalla de solo texto no lleva opciones: siempre se guarda con la lista vacía
+  // y "otra respuesta" activada, sin importar lo que haya mandado el cliente.
+  .transform((s) => (s.type === 'TEXT' ? { ...s, allowOther: true, options: [] } : s))
+  .refine((s) => s.type === 'TEXT' || s.options.length >= 1, {
+    message: 'Agrega al menos una opción',
+    path: ['options'],
+  })
+  .refine(
+    (s) => s.type === 'TEXT' || s.options.some((o) => (o.text && o.text.trim()) || (o.image && o.image.trim())),
+    { message: 'Agrega al menos una opción con texto o imagen', path: ['options'] },
+  );
 
 // Tuberías: como una pregunta de Quiz (con respuesta correcta), pero sin
 // tiempo/puntos por pregunta — el color de cada tubo es el color de su opción.

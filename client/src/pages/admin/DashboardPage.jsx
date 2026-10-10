@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { Button, Card, Input, Select, Spinner, ConfirmButton } from '../../components/ui.jsx';
 
 const publicPath = (quiz) =>
@@ -28,6 +29,7 @@ const unitLabel = (type) => (type === 'SURVEY' ? 'pantalla(s)' : type === 'BALLO
 export default function DashboardPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { admin: me } = useAuth();
   const [title, setTitle] = useState('');
   const [type, setType] = useState('QUIZ');
   const [copied, setCopied] = useState('');
@@ -38,6 +40,14 @@ export default function DashboardPage() {
     queryKey: ['quizzes'],
     queryFn: () => api.authGet('/quizzes'),
   });
+
+  // Usuarios registrados para elegir a quién compartir (sin escribir el correo a mano).
+  const { data: adminsData } = useQuery({
+    queryKey: ['admins'],
+    queryFn: () => api.authGet('/admins'),
+    enabled: !!sharing,
+  });
+  const shareTargets = (adminsData?.admins || []).filter((a) => a.id !== me?.id);
 
   const create = useMutation({
     mutationFn: () => api.authPost('/quizzes', { title: title.trim() || 'Nuevo juego', type }),
@@ -192,13 +202,20 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-500">
               El destinatario recibirá una notificación y, si la acepta, obtendrá su propia copia de este juego.
             </p>
-            <Input
-              label="Correo del destinatario"
-              type="email"
-              value={shareEmail}
-              onChange={(e) => setShareEmail(e.target.value)}
-              placeholder="persona@correo.com"
-            />
+            {shareTargets.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                No hay otros usuarios registrados todavía. Pide al dueño de la cuenta que cree uno en "Usuarios".
+              </p>
+            ) : (
+              <Select label="Elegir usuario" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)}>
+                <option value="">— Selecciona un usuario —</option>
+                {shareTargets.map((a) => (
+                  <option key={a.id} value={a.email}>
+                    {a.name} ({a.email})
+                  </option>
+                ))}
+              </Select>
+            )}
             {share.isError && <p className="text-sm text-red-600">{share.error.message}</p>}
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setSharing(null)}>

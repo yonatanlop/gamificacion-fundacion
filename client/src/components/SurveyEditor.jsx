@@ -17,13 +17,15 @@ function normalize(screen) {
   return {
     text: screen.text,
     image: screen.image || '',
-    type: screen.type === 'MULTIPLE' ? 'MULTIPLE' : 'SINGLE',
+    type: screen.type === 'MULTIPLE' || screen.type === 'TEXT' ? screen.type : 'SINGLE',
     allowOther: !!screen.allowOther,
-    options: screen.options.map((o, i) => ({
-      text: o.text || '',
-      color: o.color || PALETTE[i % PALETTE.length],
-      image: o.image || '',
-    })),
+    options: screen.options.length
+      ? screen.options.map((o, i) => ({
+          text: o.text || '',
+          color: o.color || PALETTE[i % PALETTE.length],
+          image: o.image || '',
+        }))
+      : [emptyOption(0), emptyOption(1), emptyOption(2)],
   };
 }
 
@@ -36,6 +38,9 @@ function ScreenForm({ initial, onSave, onCancel, saving }) {
   function submit() {
     setErr('');
     if (!s.text.trim()) return setErr('Escribe la pregunta.');
+    if (s.type === 'TEXT') {
+      return onSave({ type: 'TEXT', text: s.text.trim(), image: s.image.trim(), allowOther: true, options: [] });
+    }
     const opts = s.options.filter((o) => o.text.trim());
     if (opts.length < 1) return setErr('Agrega al menos una opción con texto.');
     return onSave({
@@ -54,53 +59,62 @@ function ScreenForm({ initial, onSave, onCancel, saving }) {
         <Select label="¿Cómo responden?" value={s.type} onChange={(e) => setS({ ...s, type: e.target.value })}>
           <option value="SINGLE">Elegir una opción</option>
           <option value="MULTIPLE">Elegir varias opciones</option>
+          <option value="TEXT">Solo texto (respuesta libre)</option>
         </Select>
-        <div className="flex items-end">
-          <Toggle
-            label='Permitir "Otra respuesta" (texto libre)'
-            checked={s.allowOther}
-            onChange={(v) => setS({ ...s, allowOther: v })}
-          />
-        </div>
+        {s.type !== 'TEXT' && (
+          <div className="flex items-end">
+            <Toggle
+              label='Permitir "Otra respuesta" (texto libre)'
+              checked={s.allowOther}
+              onChange={(v) => setS({ ...s, allowOther: v })}
+            />
+          </div>
+        )}
       </div>
       <ImageInput label="Imagen (opcional)" value={s.image} onChange={(v) => setS({ ...s, image: v })} />
 
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm font-medium text-slate-700">Opciones</span>
-          <Button variant="ghost" onClick={() => setS({ ...s, options: [...s.options, emptyOption(s.options.length)] })} disabled={s.options.length >= 8}>
-            + Opción
-          </Button>
-        </div>
-        <div className="space-y-2">
-          {s.options.map((o, i) => (
-            <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 p-2">
-              <input
-                type="text"
-                placeholder={`Opción ${i + 1}`}
-                value={o.text}
-                onChange={(e) => setOpt(i, { text: e.target.value })}
-                className="min-w-[8rem] flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
-              />
-              <input
-                type="color"
-                title="Color de la opción"
-                value={/^#[0-9a-fA-F]{6}$/.test(o.color) ? o.color : '#2563eb'}
-                onChange={(e) => setOpt(i, { color: e.target.value })}
-                className="h-8 w-9 cursor-pointer rounded border border-slate-300"
-              />
-              <div className="w-full sm:w-64">
-                <ImageInput label="" compact value={o.image} onChange={(v) => setOpt(i, { image: v })} />
+      {s.type === 'TEXT' ? (
+        <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">
+          Los participantes solo verán un cuadro de texto para escribir su respuesta. No se muestran opciones.
+        </p>
+      ) : (
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-700">Opciones</span>
+            <Button variant="ghost" onClick={() => setS({ ...s, options: [...s.options, emptyOption(s.options.length)] })} disabled={s.options.length >= 8}>
+              + Opción
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {s.options.map((o, i) => (
+              <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 p-2">
+                <input
+                  type="text"
+                  placeholder={`Opción ${i + 1}`}
+                  value={o.text}
+                  onChange={(e) => setOpt(i, { text: e.target.value })}
+                  className="min-w-[8rem] flex-1 rounded border border-slate-300 px-2 py-1.5 text-sm"
+                />
+                <input
+                  type="color"
+                  title="Color de la opción"
+                  value={/^#[0-9a-fA-F]{6}$/.test(o.color) ? o.color : '#2563eb'}
+                  onChange={(e) => setOpt(i, { color: e.target.value })}
+                  className="h-8 w-9 cursor-pointer rounded border border-slate-300"
+                />
+                <div className="w-full sm:w-64">
+                  <ImageInput label="" compact value={o.image} onChange={(v) => setOpt(i, { image: v })} />
+                </div>
+                {s.options.length > 1 && (
+                  <Button variant="ghost" onClick={() => setS({ ...s, options: s.options.filter((_, idx) => idx !== i) })}>
+                    ✕
+                  </Button>
+                )}
               </div>
-              {s.options.length > 1 && (
-                <Button variant="ghost" onClick={() => setS({ ...s, options: s.options.filter((_, idx) => idx !== i) })}>
-                  ✕
-                </Button>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {err && <p className="text-sm text-red-600">{err}</p>}
       <div className="flex gap-2">
@@ -162,8 +176,9 @@ export default function SurveyEditor({ quiz }) {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-slate-800">{q.text}</p>
                 <p className="text-xs text-slate-500">
-                  {q.type === 'MULTIPLE' ? 'Elegir varias' : 'Elegir una'} · {q.options.length} opciones
-                  {q.allowOther ? ' · con "Otra"' : ''}
+                  {q.type === 'TEXT'
+                    ? 'Solo texto'
+                    : `${q.type === 'MULTIPLE' ? 'Elegir varias' : 'Elegir una'} · ${q.options.length} opciones${q.allowOther ? ' · con "Otra"' : ''}`}
                 </p>
               </div>
               <div className="flex gap-1">

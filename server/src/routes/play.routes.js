@@ -84,6 +84,11 @@ router.post(
     const correctOptionIds = question.options.filter((o) => o.isCorrect).map((o) => o.id);
     const cleanOther = question.allowOther && otherText ? String(otherText).trim().slice(0, 500) : '';
 
+    // Pantalla de solo texto: no hay opciones que elegir, así que la respuesta de texto es obligatoria.
+    if (isSurvey && question.type === 'TEXT' && !cleanOther) {
+      throw new HttpError(400, 'Escribe tu respuesta antes de continuar.');
+    }
+
     const { isCorrect, pointsAwarded } = isSurvey
       ? { isCorrect: false, pointsAwarded: 0 }
       : scoreAnswer({
