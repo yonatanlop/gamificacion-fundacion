@@ -122,7 +122,16 @@ export function ConfirmButton({ onConfirm, children, confirmLabel = '¿Confirmar
         }
       }}
     >
-      {armed ? confirmLabel : children}
+      {/* Las dos etiquetas ocupan la misma celda de una rejilla: el botón reserva el
+          ancho del texto más largo y no se achica ni se mueve al armarse. Antes, al
+          cambiar a "¿Confirmar?" el botón cambiaba de tamaño y se desplazaba, así que
+          un segundo clic en el mismo lugar caía fuera y no pasaba nada — sin ningún
+          aviso de error, parecía que la acción no hacía efecto. */}
+      <span className="grid">
+        <span className="invisible col-start-1 row-start-1 whitespace-nowrap">{children}</span>
+        <span className="invisible col-start-1 row-start-1 whitespace-nowrap">{confirmLabel}</span>
+        <span className="col-start-1 row-start-1 whitespace-nowrap">{armed ? confirmLabel : children}</span>
+      </span>
     </Button>
   );
 }
