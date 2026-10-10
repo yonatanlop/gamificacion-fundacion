@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.js';
-import { Card, Spinner } from '../../components/ui.jsx';
+import { Card, Spinner, QuizNotFound } from '../../components/ui.jsx';
 import SurveyResults from './SurveyResults.jsx';
 
 export default function ResultsPage() {
@@ -11,8 +11,10 @@ export default function ResultsPage() {
     queryFn: () => api.authGet(`/quizzes/${id}/results`),
   });
 
-  if (isLoading) return <Spinner />;
-  if (isError) return <p className="text-red-600">{error.message}</p>;
+  // Igual que en el editor: "isLoading" no cubre la espera entre reintentos, así que se
+  // sigue mostrando el spinner mientras no haya datos y tampoco haya un error definitivo.
+  if (isLoading || (!data && !isError)) return <Spinner />;
+  if (isError) return <QuizNotFound error={error} />;
 
   if (data.quiz.type === 'SURVEY') return <SurveyResults />;
 

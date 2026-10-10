@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client.js';
-import { Button, Card, Input, Textarea, Toggle, Spinner, ConfirmButton } from '../../components/ui.jsx';
+import { Button, Card, Input, Textarea, Toggle, Spinner, ConfirmButton, QuizNotFound } from '../../components/ui.jsx';
 import ImageInput from '../../components/ImageInput.jsx';
 import ThemeEditor from '../../components/ThemeEditor.jsx';
 import GamePreview from '../../components/GamePreview.jsx';
@@ -40,8 +40,11 @@ export default function QuizEditorPage() {
     },
   });
 
-  if (isLoading) return <Spinner />;
-  if (isError) return <p className="text-red-600">{error.message}</p>;
+  // "isLoading" solo cubre el primer intento en curso: mientras React Query espera para
+  // reintentar tras un error, isLoading e isError pueden estar ambos en false un instante,
+  // con quiz todavía sin llegar — por eso se cubre aparte en vez de asumir que ya hay datos.
+  if (isLoading || (!quiz && !isError)) return <Spinner />;
+  if (isError) return <QuizNotFound error={error} />;
 
   const isSurvey = quiz.type === 'SURVEY';
   const isBalloons = quiz.type === 'BALLOONS';

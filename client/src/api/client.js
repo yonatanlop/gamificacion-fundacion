@@ -1,5 +1,7 @@
 const BASE = import.meta.env.VITE_API_BASE || '';
-const TOKEN_KEY = 'gf_token';
+// Se exporta para que AuthContext pueda escuchar cambios de sesión entre pestañas
+// (evento "storage") sin repetir este nombre a mano.
+export const TOKEN_KEY = 'gf_token';
 
 export function getToken() {
   try {

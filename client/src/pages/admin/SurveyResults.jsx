@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client.js';
-import { Button, Card, Spinner, Toggle, ConfirmButton } from '../../components/ui.jsx';
+import { Button, Card, Spinner, Toggle, ConfirmButton, QuizNotFound } from '../../components/ui.jsx';
 
 export default function SurveyResults() {
   const { id } = useParams();
@@ -25,8 +25,10 @@ export default function SurveyResults() {
     },
   });
 
-  if (isLoading) return <Spinner />;
-  if (isError) return <p className="text-red-600">{error.message}</p>;
+  // Igual que en el editor: "isLoading" no cubre la espera entre reintentos, así que se
+  // sigue mostrando el spinner mientras no haya datos y tampoco haya un error definitivo.
+  if (isLoading || (!data && !isError)) return <Spinner />;
+  if (isError) return <QuizNotFound error={error} />;
 
   const { quiz, respondents, screens } = data;
   const secondsAgo = Math.max(0, Math.round((Date.now() - dataUpdatedAt) / 1000));

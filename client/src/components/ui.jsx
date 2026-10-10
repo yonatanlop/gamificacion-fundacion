@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export function Button({ variant = 'primary', className = '', ...props }) {
   const styles = {
@@ -133,5 +134,33 @@ export function ConfirmButton({ onConfirm, children, confirmLabel = '¿Confirmar
         <span className="col-start-1 row-start-1 whitespace-nowrap">{armed ? confirmLabel : children}</span>
       </span>
     </Button>
+  );
+}
+
+/**
+ * Error al cargar un juego por id (editor, resultados, presentar, ruleta). Si es un 404,
+ * puede ser que lo hayan borrado o — con sondeos compartidos — que el navegador haya
+ * cambiado de cuenta y ya no sea el dueño. En vez de dejar una pantalla muerta con el
+ * mensaje crudo del servidor, se explica y se da una salida al panel.
+ */
+export function QuizNotFound({ error }) {
+  const is404 = error?.status === 404;
+  return (
+    <div className="mx-auto max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center">
+      <p className="font-semibold text-slate-800">
+        {is404 ? 'Este juego no existe o no tienes acceso a él.' : 'No se pudo cargar el juego.'}
+      </p>
+      <p className="mt-1 text-sm text-slate-500">
+        {is404
+          ? 'Puede que lo hayan borrado, o que esta sesión sea de otra cuenta — por ejemplo, si cambiaste de usuario en este navegador.'
+          : error?.message}
+      </p>
+      <Link
+        to="/admin"
+        className="mt-4 inline-block rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+      >
+        Volver a mis juegos
+      </Link>
+    </div>
   );
 }

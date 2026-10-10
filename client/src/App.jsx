@@ -27,6 +27,13 @@ function RequireAuth({ children }) {
 
 function AdminShell({ children }) {
   const { admin, logout, isOwner } = useAuth();
+  // Recarga entera a /login, sin arrastrar la pantalla actual como "a dónde volver":
+  // si no, el próximo inicio de sesión (quizá con otra cuenta) te devolvía aquí mismo,
+  // a un juego que podía no pertenecerle — y mostraba "Quiz no encontrado".
+  function handleLogout() {
+    logout();
+    window.location.href = '/login';
+  }
   return (
     <div className="min-h-screen bg-slate-100">
       <header className="border-b border-slate-200 bg-white">
@@ -50,7 +57,7 @@ function AdminShell({ children }) {
           <div className="ml-auto flex items-center gap-3 text-sm text-slate-500">
             <ShareBell />
             <span>{admin?.name}</span>
-            <button onClick={logout} className="rounded bg-slate-200 px-3 py-1 hover:bg-slate-300">
+            <button onClick={handleLogout} className="rounded bg-slate-200 px-3 py-1 hover:bg-slate-300">
               Salir
             </button>
           </div>

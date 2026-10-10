@@ -1,7 +1,24 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { api } from '../api/client.js';
 import { Button, Input, Card } from '../components/ui.jsx';
+
+// Adónde volver tras iniciar sesión. Si la pantalla anterior era la de un juego en
+// concreto (editor, resultados, presentar, ruleta), primero se confirma que ESE juego
+// sea de la cuenta que acaba de entrar — si no, puede ser el de otra cuenta (p. ej. tras
+// compartir un juego y cambiar de usuario en el mismo navegador) y mandar ahí daría
+// "Quiz no encontrado". En cualquier otro caso (o sin pantalla previa) se va al panel.
+async function resolveLoginDestination(fromPathname) {
+  const match = fromPathname?.match(/^\/admin\/quizzes\/([^/]+)/);
+  if (!match) return fromPathname || '/admin';
+  try {
+    await api.authGet(`/quizzes/${match[1]}`);
+    return fromPathname;
+  } catch {
+    return '/admin';
+  }
+}
 
 export default function LoginPage() {
   const { admin, login } = useAuth();
@@ -12,7 +29,9 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  if (admin) return <Navigate to={location.state?.from?.pathname || '/admin'} replace />;
+  // Si ya hay sesión (p. ej. se entró a /login por error, o quedó un token válido de
+  // antes), al panel: no se reutiliza el "volver a" sin confirmar que sea de esta cuenta.
+  if (admin) return <Navigate to="/admin" replace />;
 
   async function submit(e) {
     e.preventDefault();
@@ -20,7 +39,8 @@ export default function LoginPage() {
     setError('');
     try {
       await login(email.trim().toLowerCase(), password);
-      navigate(location.state?.from?.pathname || '/admin', { replace: true });
+      const dest = await resolveLoginDestination(location.state?.from?.pathname);
+      navigate(dest, { replace: true });
     } catch (err) {
       setError(err.message || 'No se pudo iniciar sesión');
     } finally {
